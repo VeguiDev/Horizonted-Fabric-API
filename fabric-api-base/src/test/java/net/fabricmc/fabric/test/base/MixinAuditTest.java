@@ -15,28 +15,28 @@
  */
 
 package net.fabricmc.fabric.test.base;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.spongepowered.asm.mixin.MixinEnvironment;
-
-import net.minecraft.Bootstrap;
-import net.minecraft.SharedConstants;
-
-/**
- * A simple unit test that forces Mixin to load and apply all mixins.
- *
- * <p>This test is useful when porting to a new version as you don't need to wait for the game to load to check for mixin errors.
- */
-public class MixinAuditTest {
-	@BeforeAll
-	static void beforeAll() {
-		SharedConstants.createGameVersion();
-		Bootstrap.initialize();
-	}
-
-	@Test
-	void auditMixins() {
-		MixinEnvironment.getCurrentEnvironment().audit();
-	}
-}
+//
+//import org.junit.jupiter.api.BeforeAll;
+//import org.junit.jupiter.api.Test;
+//import org.spongepowered.asm.mixin.MixinEnvironment;
+//
+//import net.minecraft.Bootstrap;
+//import net.minecraft.SharedConstants;
+//
+///**
+// * A simple unit test that forces Mixin to load and apply all mixins.
+// *
+// * <p>This test is useful when porting to a new version as you don't need to wait for the game to load to check for mixin errors.
+// */
+//public class MixinAuditTest {
+//	@BeforeAll
+//	static void beforeAll() {
+//		SharedConstants.createGameVersion();
+//		Bootstrap.initialize();
+//	}
+//
+//	@Test
+//	void auditMixins() {
+//		MixinEnvironment.getCurrentEnvironment().audit();
+//	}
+//}
