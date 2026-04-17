@@ -1,0 +1,8 @@
+version = getSubprojectVersion(project)
+
+// todo: convert access widener to access transformer
+//loom {
+//	accessWidenerPath = file("src/main/resources/fabric-lifecycle-events-v1.accesswidener")
+//}
+
+moduleDependencies(project, ['fabric-api-base'])
