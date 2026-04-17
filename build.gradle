@@ -110,7 +110,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            sourceCompatibility = JavaLanguageVersion.of(21)
         }
     }
 

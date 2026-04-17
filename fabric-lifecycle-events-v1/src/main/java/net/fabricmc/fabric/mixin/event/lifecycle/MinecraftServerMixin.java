@@ -32,7 +32,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -41,39 +40,39 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
 	@Shadow
-	private MinecraftServer.ReloadableResources reloadableResources;
+    public MinecraftServer.ReloadableResources resources;
 
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;setupServer()Z"), method = "runServer")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;initServer()Z"), method = "runServer")
 	private void beforeSetupServer(CallbackInfo info) {
 		ServerLifecycleEvents.SERVER_STARTING.invoker().onServerStarting((MinecraftServer) (Object) this);
 	}
 
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;createMetadata()Lnet/minecraft/server/ServerMetadata;", ordinal = 0), method = "runServer")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;buildServerStatus()Lnet/minecraft/network/protocol/status/ServerStatus;", ordinal = 0), method = "runServer")
 	private void afterSetupServer(CallbackInfo info) {
 		ServerLifecycleEvents.SERVER_STARTED.invoker().onServerStarted((MinecraftServer) (Object) this);
 	}
 
-	@Inject(at = @At("HEAD"), method = "shutdown")
+	@Inject(at = @At("HEAD"), method = "stopServer")
 	private void beforeShutdownServer(CallbackInfo info) {
 		ServerLifecycleEvents.SERVER_STOPPING.invoker().onServerStopping((MinecraftServer) (Object) this);
 	}
 
-	@Inject(at = @At("TAIL"), method = "shutdown")
+	@Inject(at = @At("TAIL"), method = "stopServer")
 	private void afterShutdownServer(CallbackInfo info) {
 		ServerLifecycleEvents.SERVER_STOPPED.invoker().onServerStopped((MinecraftServer) (Object) this);
 	}
 
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;tickWorlds(Ljava/util/function/BooleanSupplier;)V"), method = "tick")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;tickChildren(Ljava/util/function/BooleanSupplier;)V"), method = "tickServer")
 	private void onStartTick(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
 		ServerTickEvents.START_SERVER_TICK.invoker().onStartTick((MinecraftServer) (Object) this);
 	}
 
-	@Inject(at = @At("TAIL"), method = "tick")
+	@Inject(at = @At("TAIL"), method = "tickServer")
 	private void onEndTick(BooleanSupplier shouldKeepTicking, CallbackInfo info) {
 		ServerTickEvents.END_SERVER_TICK.invoker().onEndTick((MinecraftServer) (Object) this);
 	}
 
-	@WrapOperation(method = "createWorlds", at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"))
+	@WrapOperation(method = "prepareLevels", at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"))
 	private <K, V> V onLoadWorld(Map<K, V> worlds, K registryKey, V serverWorld, Operation<V> original) {
 		final V result = original.call(worlds, registryKey, serverWorld);
 		ServerWorldEvents.LOAD.invoker().onWorldLoad((MinecraftServer) (Object) this, (ServerWorld) serverWorld);
