@@ -24,17 +24,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
-@Mixin(CommandManager.class)
+@Mixin(Commands.class)
 public abstract class CommandManagerMixin {
 	@Shadow
 	@Final
-	private CommandDispatcher<ServerCommandSource> dispatcher;
+	private CommandDispatcher<CommandSourceStack> dispatcher;
 
 	/**
 	 * Wait an inject in a constructor?
@@ -43,8 +43,11 @@ public abstract class CommandManagerMixin {
 	 *
 	 * @reason Add commands before ambiguities are calculated.
 	 */
-	@Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/brigadier/CommandDispatcher;setConsumer(Lcom/mojang/brigadier/ResultConsumer;)V", remap = false), method = "<init>")
-	private void fabric_addCommands(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess registryAccess, CallbackInfo ci) {
+	@Inject(
+			at = @At(value = "INVOKE", target = "Lcom/mojang/brigadier/CommandDispatcher;setConsumer(Lcom/mojang/brigadier/ResultConsumer;)V", remap = false),
+			method = "<init>(Lnet/minecraft/commands/Commands$CommandSelection;Lnet/minecraft/commands/CommandBuildContext;Z)V"
+	)
+	private void fabric_addCommands(Commands.CommandSelection environment, CommandBuildContext registryAccess, boolean modern, CallbackInfo ci) {
 		CommandRegistrationCallback.EVENT.invoker().register(this.dispatcher, registryAccess, environment);
 	}
 }
