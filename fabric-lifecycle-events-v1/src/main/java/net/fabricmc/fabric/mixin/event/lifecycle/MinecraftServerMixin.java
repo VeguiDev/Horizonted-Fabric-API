@@ -41,7 +41,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
 	@Shadow
-	private MinecraftServer.ResourceManagerHolder resourceManagerHolder;
+	private MinecraftServer.ReloadableResources reloadableResources;
 
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;setupServer()Z"), method = "runServer")
 	private void beforeSetupServer(CallbackInfo info) {

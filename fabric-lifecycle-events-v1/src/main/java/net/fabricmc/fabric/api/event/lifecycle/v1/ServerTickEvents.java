@@ -17,10 +17,10 @@
 package net.fabricmc.fabric.api.event.lifecycle.v1;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.minecraft.server.level.ServerLevel;
 
 /**
  * Contains events that are triggered on the server every tick.
@@ -92,11 +92,11 @@ public final class ServerTickEvents {
 
 	@FunctionalInterface
 	public interface StartWorldTick {
-		void onStartTick(ServerWorld world);
+		void onStartTick(ServerLevel level);
 	}
 
 	@FunctionalInterface
 	public interface EndWorldTick {
-		void onEndTick(ServerWorld world);
+		void onEndTick(ServerLevel level);
 	}
 }

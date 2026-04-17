@@ -17,17 +17,17 @@
 package net.fabricmc.fabric.api.event.lifecycle.v1;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.PersistentState;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.saveddata.SavedData;
 
 public final class ServerWorldEvents {
 	/**
 	 * Called just after a world is loaded by a Minecraft server.
 	 *
-	 * <p>This can be used to load world specific metadata or initialize a {@link PersistentState} on a server world.
+	 * <p>This can be used to load world specific metadata or initialize a {@link SavedData} on a server world.
 	 */
 	public static final Event<Load> LOAD = EventFactory.createArrayBacked(Load.class, callbacks -> (server, world) -> {
 		for (Load callback : callbacks) {
@@ -49,12 +49,12 @@ public final class ServerWorldEvents {
 
 	@FunctionalInterface
 	public interface Load {
-		void onWorldLoad(MinecraftServer server, ServerWorld world);
+		void onWorldLoad(MinecraftServer server, ServerLevel level);
 	}
 
 	@FunctionalInterface
 	public interface Unload {
-		void onWorldUnload(MinecraftServer server, ServerWorld world);
+		void onWorldUnload(MinecraftServer server, ServerLevel level);
 	}
 
 	private ServerWorldEvents() {
