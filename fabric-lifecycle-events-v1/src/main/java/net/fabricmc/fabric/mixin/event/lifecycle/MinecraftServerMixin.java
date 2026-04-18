@@ -17,13 +17,14 @@
 package net.fabricmc.fabric.mixin.event.lifecycle;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import io.papermc.paper.event.server.ServerResourcesReloadedEvent;
+import net.minecraft.server.level.ServerLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -72,39 +73,36 @@ public abstract class MinecraftServerMixin {
 		ServerTickEvents.END_SERVER_TICK.invoker().onEndTick((MinecraftServer) (Object) this);
 	}
 
-	@WrapOperation(method = "prepareLevels", at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"))
-	private <K, V> V onLoadWorld(Map<K, V> worlds, K registryKey, V serverWorld, Operation<V> original) {
-		final V result = original.call(worlds, registryKey, serverWorld);
-		ServerWorldEvents.LOAD.invoker().onWorldLoad((MinecraftServer) (Object) this, (ServerWorld) serverWorld);
-
-		return result;
+	@Inject(method = "loadWorld0", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;addLevel(Lnet/minecraft/server/level/ServerLevel;)V", shift = At.Shift.AFTER))
+	private void onLoadWorld(String levelId, CallbackInfo ci, @Local(name = "serverLevel") ServerLevel level) {
+		ServerWorldEvents.LOAD.invoker().onWorldLoad((MinecraftServer) (Object) this, level);
 	}
 
-	@Inject(method = "shutdown", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/world/ServerWorld;close()V"))
-	private void onUnloadWorldAtShutdown(CallbackInfo ci, @Local ServerWorld world) {
-		ServerWorldEvents.UNLOAD.invoker().onWorldUnload((MinecraftServer) (Object) this, world);
+	@Inject(method = "removeLevel", at = @At(value = "TAIL"))
+	private void onUnloadWorldAtShutdown(CallbackInfo ci, @Local(name = "level") ServerLevel level) {
+		ServerWorldEvents.UNLOAD.invoker().onWorldUnload((MinecraftServer) (Object) this, level);
 	}
 
-	@Inject(method = "reloadResources", at = @At("HEAD"))
-	private void startResourceReload(Collection<String> collection, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
-		ServerLifecycleEvents.START_DATA_PACK_RELOAD.invoker().startDataPackReload((MinecraftServer) (Object) this, this.resourceManagerHolder.resourceManager());
+	@Inject(method = "reloadResources(Ljava/util/Collection;Lio/papermc/paper/event/server/ServerResourcesReloadedEvent$Cause;)Ljava/util/concurrent/CompletableFuture;", at = @At("HEAD"))
+	private void startResourceReload(Collection<String> selectedIds, ServerResourcesReloadedEvent.Cause cause, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+		ServerLifecycleEvents.START_DATA_PACK_RELOAD.invoker().startDataPackReload((MinecraftServer) (Object) this, this.resources.resourceManager());
 	}
 
-	@Inject(method = "reloadResources", at = @At("TAIL"))
-	private void endResourceReload(Collection<String> collection, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
+	@Inject(method = "reloadResources(Ljava/util/Collection;Lio/papermc/paper/event/server/ServerResourcesReloadedEvent$Cause;)Ljava/util/concurrent/CompletableFuture;", at = @At("TAIL"))
+	private void endResourceReload(Collection<String> selectedIds, ServerResourcesReloadedEvent.Cause cause, CallbackInfoReturnable<CompletableFuture<Void>> cir) {
 		cir.getReturnValue().handleAsync((value, throwable) -> {
 			// Hook into fail
-			ServerLifecycleEvents.END_DATA_PACK_RELOAD.invoker().endDataPackReload((MinecraftServer) (Object) this, this.resourceManagerHolder.resourceManager(), throwable == null);
+			ServerLifecycleEvents.END_DATA_PACK_RELOAD.invoker().endDataPackReload((MinecraftServer) (Object) this, this.resources.resourceManager(), throwable == null);
 			return value;
 		}, (MinecraftServer) (Object) this);
 	}
 
-	@Inject(method = "save", at = @At("HEAD"))
+	@Inject(method = "saveAllChunks(ZZZ)Z", at = @At("HEAD"))
 	private void startSave(boolean suppressLogs, boolean flush, boolean force, CallbackInfoReturnable<Boolean> cir) {
 		ServerLifecycleEvents.BEFORE_SAVE.invoker().onBeforeSave((MinecraftServer) (Object) this, flush, force);
 	}
 
-	@Inject(method = "save", at = @At("TAIL"))
+	@Inject(method = "saveAllChunks(ZZZ)Z", at = @At("TAIL"))
 	private void endSave(boolean suppressLogs, boolean flush, boolean force, CallbackInfoReturnable<Boolean> cir) {
 		ServerLifecycleEvents.AFTER_SAVE.invoker().onAfterSave((MinecraftServer) (Object) this, flush, force);
 	}
