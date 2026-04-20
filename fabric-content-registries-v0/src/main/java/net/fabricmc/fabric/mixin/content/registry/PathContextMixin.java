@@ -16,9 +16,6 @@
 
 package net.fabricmc.fabric.mixin.content.registry;
 
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.CollisionGetter;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,10 +40,9 @@ public abstract class PathContextMixin {
 	/**
 	 * Overrides the node type for the specified position, if the position is found as neighbor block in a path.
 	 */
-	@Definition(id = "set", method = "Lnet/minecraft/core/BlockPos$MutableBlockPos;set(III)Lnet/minecraft/core/BlockPos$MutableBlockPos;")
-	@Expression("? = ?.set(?, ?, ?)")
-	@Inject(method = "getPathTypeFromState", at = @At(value = "MIXINEXTRAS:EXPRESSION", shift = At.Shift.AFTER), cancellable = true)
-	private void onGetNodeType(int x, int y, int z, CallbackInfoReturnable<PathType> cir, @Local BlockPos pos) {
+	@Inject(method = "getPathTypeFromState", at = @At("HEAD"), cancellable = true)
+	private void onGetNodeType(int x, int y, int z, CallbackInfoReturnable<PathType> cir) {
+		BlockPos pos = new BlockPos(x, y, z);
 		final PathType neighborNodeType = LandPathNodeTypesRegistry.getPathNodeType(getBlockState(pos), level(), pos, true);
 
 		if (neighborNodeType != null) {
