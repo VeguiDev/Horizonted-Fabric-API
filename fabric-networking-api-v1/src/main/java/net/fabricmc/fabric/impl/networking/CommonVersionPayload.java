@@ -27,11 +27,11 @@ public record CommonVersionPayload(int[] versions) implements CustomPacketPayloa
 	public static final CustomPacketPayload.Type<CommonVersionPayload> ID = TYPE;
 
 	private CommonVersionPayload(FriendlyByteBuf buf) {
-		this(buf.readIntArray());
+		this(buf.readVarIntArray());
 	}
 
 	private void write(FriendlyByteBuf buf) {
-		buf.writeIntArray(versions);
+		buf.writeVarIntArray(versions);
 	}
 
 	@Override

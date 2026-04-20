@@ -22,25 +22,12 @@
   },
   "description": "Syncs registry mappings.",
   "mixins": [
-    "fabric-registry-sync-v0.mixins.json",
-    {
-      "config": "fabric-registry-sync-v0.client.mixins.json",
-      "environment": "client"
-    }
+    "fabric-registry-sync-v0.mixins.json"
   ],
-  "entrypoints": {
-    "main": [
-      "net.fabricmc.fabric.impl.registry.sync.FabricRegistryInit"
-    ],
-    "client": [
-      "net.fabricmc.fabric.impl.client.registry.sync.FabricRegistryClientInit"
-    ]
-  },
+  "entrypoints": {},
   "accessWidener": "fabric-registry-sync-v0.accesswidener",
   "custom": {
     "fabric-api:module-lifecycle": "stable",
-    "loom:injected_interfaces": {
-      "net/minecraft/class_2378": ["net/fabricmc/fabric/api/event/registry/FabricRegistry"]
-    }
+    "loom:injected_interfaces": {}
   }
 }

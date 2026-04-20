@@ -9,7 +9,6 @@
     "LivingEntityMixin",
     "MinecraftServerMixin",
     "PlayerManagerMixin",
-    "ServerChunkLoadingManagerMixin",
     "ServerWorldMixin",
     "ServerWorldServerEntityHandlerMixin",
     "WorldMixin"

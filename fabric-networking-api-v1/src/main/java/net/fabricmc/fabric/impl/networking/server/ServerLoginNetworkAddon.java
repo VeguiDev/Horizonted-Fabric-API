@@ -126,8 +126,8 @@ public final class ServerLoginNetworkAddon extends AbstractNetworkAddon<ServerLo
 	 * @return true if the packet was handled
 	 */
 	public boolean handle(ServerboundCustomQueryAnswerPacket packet) {
-		PacketByteBufLoginQueryResponse response = (PacketByteBufLoginQueryResponse) packet.payload();
-		return handle(packet.type(), response == null ? null : response.data());
+		ServerboundCustomQueryAnswerPacket.QueryAnswerPayload response = (ServerboundCustomQueryAnswerPacket.QueryAnswerPayload) packet.payload();
+		return handle(packet.transactionId(), response == null ? null : response.buffer);
 	}
 
 	private boolean handle(int queryId, @Nullable FriendlyByteBuf originalBuf) {

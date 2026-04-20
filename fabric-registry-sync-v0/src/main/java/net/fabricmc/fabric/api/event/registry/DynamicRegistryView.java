@@ -21,9 +21,9 @@ import java.util.stream.Stream;
 
 import org.jetbrains.annotations.ApiStatus;
 
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceKey;
 
 /**
  * A view providing access to the registries that are currently being loaded. This is passed to
@@ -37,9 +37,9 @@ import net.minecraft.registry.RegistryKey;
 @ApiStatus.NonExtendable
 public interface DynamicRegistryView {
 	/**
-	 * @return an {@link DynamicRegistryManager} instance representing the registry view
+	 * @return a {@link RegistryAccess.Frozen} instance representing the registry view
 	 */
-	DynamicRegistryManager asDynamicRegistryManager();
+	RegistryAccess.Frozen asDynamicRegistryManager();
 
 	/**
 	 * @return the stream of registries that are currently being loaded
@@ -54,12 +54,12 @@ public interface DynamicRegistryView {
 	 * @param registryRef the registry key of the registry to get
 	 * @return the registry, or {@link Optional#empty()} if the registry is not currently being loaded
 	 */
-	<T> Optional<Registry<T>> getOptional(RegistryKey<? extends Registry<? extends T>> registryRef);
+	<T> Optional<Registry<T>> getOptional(ResourceKey<? extends Registry<? extends T>> registryRef);
 
 	/**
 	 * A shortcut to register {@link RegistryEntryAddedCallback}.
 	 * @param registryRef the registry key of the registry to register the event to
 	 * @param callback the callback of the event
 	 */
-	<T> void registerEntryAdded(RegistryKey<? extends Registry<? extends T>> registryRef, RegistryEntryAddedCallback<T> callback);
+	<T> void registerEntryAdded(ResourceKey<? extends Registry<? extends T>> registryRef, RegistryEntryAddedCallback<T> callback);
 }
