@@ -19,32 +19,33 @@ package net.fabricmc.fabric.mixin.resource.loader;
 import java.util.List;
 
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import net.minecraft.server.packs.repository.KnownPack;
 
 import net.fabricmc.fabric.impl.resource.loader.FabricOriginalKnownPacksGetter;
 
-@Mixin(MinecraftServer.class)
-public class MinecraftServerMixin implements FabricOriginalKnownPacksGetter {
-	@Unique
-	private List<KnownPack> fabric_originalKnownPacks = List.of();
+@Mixin(ServerConfigurationPacketListenerImpl.class)
+public abstract class ServerConfigurationPacketListenerImplMixin {
+	@Shadow
+	protected MinecraftServer server;
 
-	@Inject(method = "<init>", at = @At("TAIL"))
-	private void captureOriginalKnownPacks(CallbackInfo ci) {
-		MinecraftServer server = (MinecraftServer) (Object) this;
-		this.fabric_originalKnownPacks = server.getResourceManager()
-				.listPacks()
-				.flatMap(packResources -> packResources.location().knownPackInfo().stream())
+	@ModifyArg(
+			method = "startConfiguration",
+			at = @At(
+					value = "INVOKE",
+					target = "Lnet/minecraft/server/network/config/SynchronizeRegistriesTask;<init>(Ljava/util/List;Lnet/minecraft/core/LayeredRegistryAccess;)V"
+			),
+			index = 0
+	)
+	private List<KnownPack> filterKnownPacks(List<KnownPack> currentKnownPacks) {
+		return ((FabricOriginalKnownPacksGetter) this.server).fabric_getOriginalKnownPacks()
+				.stream()
+				.filter(currentKnownPacks::contains)
 				.toList();
-	}
-
-	@Override
-	public List<KnownPack> fabric_getOriginalKnownPacks() {
-		return this.fabric_originalKnownPacks;
 	}
 }

@@ -25,24 +25,18 @@ import java.util.function.Predicate;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import net.minecraft.resource.ResourcePackInfo;
-import net.minecraft.resource.ResourcePackPosition;
-import net.minecraft.resource.ResourcePackProfile;
-import net.minecraft.resource.ResourcePackProvider;
-import net.minecraft.resource.ResourcePackSource;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.PackLocationInfo;
+import net.minecraft.server.packs.PackSelectionConfig;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackSource;
+import net.minecraft.server.packs.repository.RepositorySource;
 
 import net.fabricmc.fabric.api.resource.ModResourcePack;
 import net.fabricmc.loader.api.FabricLoader;
 
-/**
- * Represents a resource pack provider for mods and built-in mods resource packs.
- */
-public class ModResourcePackCreator implements ResourcePackProvider {
-	/**
-	 * The ID of the root resource pack profile for bundled packs.
-	 */
+public class ModResourcePackCreator implements RepositorySource {
 	public static final String FABRIC = "fabric";
 	private static final String PROGRAMMER_ART = "programmer_art";
 	private static final String HIGH_CONTRAST = "high_contrast";
@@ -53,102 +47,67 @@ public class ModResourcePackCreator implements ResourcePackProvider {
 	public static final Predicate<Set<String>> PROGRAMMER_ART_PARENT = enabled -> enabled.contains(FABRIC) && enabled.contains(PROGRAMMER_ART);
 	@VisibleForTesting
 	public static final Predicate<Set<String>> HIGH_CONTRAST_PARENT = enabled -> enabled.contains(FABRIC) && enabled.contains(HIGH_CONTRAST);
-	/**
-	 * This can be used to check if a pack profile is for mod-provided packs.
-	 */
-	public static final ResourcePackSource RESOURCE_PACK_SOURCE = new ResourcePackSource() {
+	public static final PackSource RESOURCE_PACK_SOURCE = new PackSource() {
 		@Override
-		public Text decorate(Text packName) {
-			return Text.translatable("pack.nameAndSource", packName, Text.translatable("pack.source.fabricmod"));
+		public Component decorate(Component packName) {
+			return Component.translatable("pack.nameAndSource", packName, Component.translatable("pack.source.fabricmod"));
 		}
 
 		@Override
-		public boolean canBeEnabledLater() {
+		public boolean shouldAddAutomatically() {
 			return true;
 		}
 	};
-	public static final ModResourcePackCreator CLIENT_RESOURCE_PACK_PROVIDER = new ModResourcePackCreator(ResourceType.CLIENT_RESOURCES);
-	/**
-	 * The maximum number of known data packs requested from the client, including vanilla data packs.
-	 */
+	public static final ModResourcePackCreator CLIENT_RESOURCE_PACK_PROVIDER = new ModResourcePackCreator(PackType.CLIENT_RESOURCES);
 	public static final int MAX_KNOWN_PACKS = Integer.getInteger("fabric-resource-loader-v0:maxKnownPacks", 1024);
 
-	private final ResourceType type;
-	private final ResourcePackPosition activationInfo;
+	private final PackType type;
+	private final PackSelectionConfig activationInfo;
 	private final boolean forClientDataPackManager;
 
-	public ModResourcePackCreator(ResourceType type) {
+	public ModResourcePackCreator(PackType type) {
 		this(type, false);
 	}
 
-	protected ModResourcePackCreator(ResourceType type, boolean forClientDataPackManager) {
+	protected ModResourcePackCreator(PackType type, boolean forClientDataPackManager) {
 		this.type = type;
-		this.activationInfo = new ResourcePackPosition(!forClientDataPackManager, ResourcePackProfile.InsertionPosition.TOP, false);
+		this.activationInfo = new PackSelectionConfig(!forClientDataPackManager, Pack.Position.TOP, false);
 		this.forClientDataPackManager = forClientDataPackManager;
 	}
 
-	/**
-	 * Registers the resource packs.
-	 *
-	 * @param consumer The resource pack profile consumer.
-	 */
 	@Override
-	public void register(Consumer<ResourcePackProfile> consumer) {
-		/*
-			Register order rule in this provider:
-			1. Mod resource packs
-			2. Mod built-in resource packs
+	public void loadPacks(Consumer<Pack> consumer) {
+		if (this.type == PackType.CLIENT_RESOURCES) {
+			PackLocationInfo info = new PackLocationInfo(
+					FABRIC,
+					Component.translatable("pack.name.fabricMods"),
+					RESOURCE_PACK_SOURCE,
+					Optional.empty()
+			);
+			Pack placeholder = Pack.readMetaAndCreate(info, new PlaceholderResourcePack.Factory(this.type, info), this.type, this.activationInfo);
 
-			Register order rule globally:
-			1. Default and Vanilla built-in resource packs
-			2. Mod resource packs
-			3. Mod built-in resource packs
-			4. User resource packs
-		 */
+			if (placeholder != null) {
+				consumer.accept(placeholder);
+			}
+		}
 
-		ResourcePackInfo metadata = new ResourcePackInfo(
-				FABRIC,
-				Text.translatable("pack.name.fabricMods"),
-				RESOURCE_PACK_SOURCE,
-				Optional.empty()
-		);
-
-		consumer.accept(ResourcePackProfile.create(
-				metadata,
-				new PlaceholderResourcePack.Factory(this.type, metadata),
-				this.type,
-				this.activationInfo
-		));
-
-		// Build a list of mod resource packs.
 		registerModPack(consumer, null, BASE_PARENT);
 
-		if (this.type == ResourceType.CLIENT_RESOURCES) {
-			// Programmer Art/High Contrast data packs can never be enabled.
+		if (this.type == PackType.CLIENT_RESOURCES) {
 			registerModPack(consumer, PROGRAMMER_ART, PROGRAMMER_ART_PARENT);
 			registerModPack(consumer, HIGH_CONTRAST, HIGH_CONTRAST_PARENT);
 		}
 
-		// Register all built-in resource packs provided by mods.
 		ResourceManagerHelperImpl.registerBuiltinResourcePacks(this.type, consumer);
 	}
 
-	private void registerModPack(Consumer<ResourcePackProfile> consumer, @Nullable String subPath, Predicate<Set<String>> parents) {
+	private void registerModPack(Consumer<Pack> consumer, @Nullable String subPath, Predicate<Set<String>> parents) {
 		List<ModResourcePack> packs = ModResourcePackUtil.getModResourcePacks(FabricLoader.getInstance(), this.type, subPath);
 
 		for (ModResourcePack pack : packs) {
-			ResourcePackProfile profile = ResourcePackProfile.create(
-					pack.getInfo(),
-					new ModResourcePackFactory(pack),
-					this.type,
-					this.activationInfo
-			);
+			Pack profile = Pack.readMetaAndCreate(pack.location(), new ModResourcePackFactory(pack), this.type, this.activationInfo);
 
 			if (profile != null) {
-				if (!forClientDataPackManager) {
-					((FabricResourcePackProfile) profile).fabric_setParentsPredicate(parents);
-				}
-
 				consumer.accept(profile);
 			}
 		}

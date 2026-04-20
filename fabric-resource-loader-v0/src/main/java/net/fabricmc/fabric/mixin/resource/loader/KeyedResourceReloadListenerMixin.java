@@ -23,39 +23,38 @@ import java.util.Locale;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import net.minecraft.recipe.ServerRecipeManager;
-import net.minecraft.server.ServerAdvancementLoader;
-import net.minecraft.server.function.FunctionLoader;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.ServerAdvancementManager;
+import net.minecraft.server.ServerFunctionLibrary;
+import net.minecraft.world.item.crafting.RecipeManager;
 
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
 
 @Mixin({
-		/* public */
-		ServerRecipeManager.class, ServerAdvancementLoader.class, FunctionLoader.class
-		/* private */
+		RecipeManager.class,
+		ServerAdvancementManager.class,
+		ServerFunctionLibrary.class
 })
 public abstract class KeyedResourceReloadListenerMixin implements IdentifiableResourceReloadListener {
 	@Unique
-	private Identifier id;
+	private ResourceLocation id;
 	@Unique
-	private Collection<Identifier> dependencies;
+	private Collection<ResourceLocation> dependencies;
 
 	@Override
-	@SuppressWarnings({"ConstantConditions", "RedundantCast"})
-	public Identifier getFabricId() {
+	public ResourceLocation getFabricId() {
 		if (this.id == null) {
 			Object self = this;
 
-			if (self instanceof ServerRecipeManager) {
+			if (self instanceof RecipeManager) {
 				this.id = ResourceReloadListenerKeys.RECIPES;
-			} else if (self instanceof ServerAdvancementLoader) {
+			} else if (self instanceof ServerAdvancementManager) {
 				this.id = ResourceReloadListenerKeys.ADVANCEMENTS;
-			} else if (self instanceof FunctionLoader) {
+			} else if (self instanceof ServerFunctionLibrary) {
 				this.id = ResourceReloadListenerKeys.FUNCTIONS;
 			} else {
-				this.id = Identifier.ofVanilla("private/" + self.getClass().getSimpleName().toLowerCase(Locale.ROOT));
+				this.id = ResourceLocation.withDefaultNamespace("private/" + self.getClass().getSimpleName().toLowerCase(Locale.ROOT));
 			}
 		}
 
@@ -63,8 +62,7 @@ public abstract class KeyedResourceReloadListenerMixin implements IdentifiableRe
 	}
 
 	@Override
-	@SuppressWarnings({"ConstantConditions", "RedundantCast"})
-	public Collection<Identifier> getFabricDependencies() {
+	public Collection<ResourceLocation> getFabricDependencies() {
 		if (this.dependencies == null) {
 			this.dependencies = Collections.emptyList();
 		}

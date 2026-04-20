@@ -16,31 +16,21 @@
 
 package net.fabricmc.fabric.mixin.resource.loader;
 
-import java.util.Objects;
-
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.Shadow;
 
-import net.minecraft.recipe.ServerRecipeManager;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.world.item.crafting.RecipeManager;
 
 import net.fabricmc.fabric.impl.resource.loader.FabricRecipeManager;
 
-@Mixin(ServerRecipeManager.class)
-public class ServerRecipeManagerMixin implements FabricRecipeManager {
-	@Unique
-	private RegistryWrapper.WrapperLookup registries;
-
-	@Inject(method = "<init>", at = @At("TAIL"))
-	private void init(RegistryWrapper.WrapperLookup registries, CallbackInfo ci) {
-		this.registries = registries;
-	}
+@Mixin(RecipeManager.class)
+public abstract class ServerRecipeManagerMixin implements FabricRecipeManager {
+	@Shadow
+	private HolderLookup.Provider registries;
 
 	@Override
-	public RegistryWrapper.WrapperLookup fabric_getRegistries() {
-		return Objects.requireNonNull(registries);
+	public HolderLookup.Provider fabric_getRegistries() {
+		return this.registries;
 	}
 }

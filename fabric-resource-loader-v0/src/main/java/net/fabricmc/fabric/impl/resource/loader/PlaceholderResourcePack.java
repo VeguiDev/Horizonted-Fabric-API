@@ -28,93 +28,79 @@ import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.SharedConstants;
-import net.minecraft.resource.InputSupplier;
-import net.minecraft.resource.ResourcePack;
-import net.minecraft.resource.ResourcePackInfo;
-import net.minecraft.resource.ResourcePackProfile;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.resource.metadata.PackResourceMetadata;
-import net.minecraft.resource.metadata.ResourceMetadataMap;
-import net.minecraft.resource.metadata.ResourceMetadataSerializer;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.AbstractPackResources;
+import net.minecraft.server.packs.PackLocationInfo;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.resources.IoSupplier;
 
-public record PlaceholderResourcePack(ResourceType type, ResourcePackInfo metadata) implements ResourcePack {
-	private static final Text DESCRIPTION_TEXT = Text.translatable("pack.description.modResources");
+public class PlaceholderResourcePack extends AbstractPackResources {
+	private static final Component DESCRIPTION_TEXT = Component.translatable("pack.description.modResources");
 
-	public PackResourceMetadata getMetadata() {
-		return ModResourcePackUtil.getMetadataPack(
-				SharedConstants.getGameVersion().packVersion(type),
-				DESCRIPTION_TEXT
-		);
+	private final PackType type;
+
+	public PlaceholderResourcePack(PackType type, PackLocationInfo location) {
+		super(location);
+		this.type = type;
+	}
+
+	public PackMetadataSection getMetadata() {
+		return ModResourcePackUtil.getMetadataPack(SharedConstants.getCurrentVersion().packVersion(this.type), DESCRIPTION_TEXT);
 	}
 
 	@Nullable
 	@Override
-	public InputSupplier<InputStream> openRoot(String... segments) {
+	public IoSupplier<InputStream> getRootResource(String... segments) {
 		if (segments.length > 0) {
 			switch (segments[0]) {
 			case "pack.mcmeta":
 				return () -> {
-					DataResult<JsonElement> result = PackResourceMetadata.SERIALIZER.codec().encodeStart(JsonOps.INSTANCE, getMetadata());
-					String metadata = result.getOrThrow().toString();
+					DataResult<JsonElement> result = PackMetadataSection.CODEC.encodeStart(JsonOps.INSTANCE, getMetadata());
+					String metadata = "{\"pack\":" + result.getOrThrow() + "}";
 					return IOUtils.toInputStream(metadata, StandardCharsets.UTF_8);
 				};
 			case "pack.png":
 				return ModResourcePackUtil::getDefaultIcon;
+			default:
+				return null;
 			}
 		}
 
 		return null;
 	}
 
-	/**
-	 * This pack has no actual contents.
-	 */
 	@Nullable
 	@Override
-	public InputSupplier<InputStream> open(ResourceType type, Identifier id) {
+	public IoSupplier<InputStream> getResource(PackType type, ResourceLocation id) {
 		return null;
 	}
 
 	@Override
-	public void findResources(ResourceType type, String namespace, String prefix, ResultConsumer consumer) {
+	public void listResources(PackType type, String namespace, String prefix, PackResources.ResourceOutput consumer) {
 	}
 
 	@Override
-	public Set<String> getNamespaces(ResourceType type) {
+	public Set<String> getNamespaces(PackType type) {
 		return Collections.emptySet();
-	}
-
-	@Nullable
-	@Override
-	public <T> T parseMetadata(ResourceMetadataSerializer<T> metaReader) {
-		return ResourceMetadataMap.of(PackResourceMetadata.SERIALIZER, getMetadata()).get(metaReader);
-	}
-
-	@Override
-	public ResourcePackInfo getInfo() {
-		return metadata;
-	}
-
-	@Override
-	public String getId() {
-		return ModResourcePackCreator.FABRIC;
 	}
 
 	@Override
 	public void close() {
 	}
 
-	public record Factory(ResourceType type, ResourcePackInfo metadata) implements ResourcePackProfile.PackFactory {
+	public record Factory(PackType type, PackLocationInfo location) implements Pack.ResourcesSupplier {
 		@Override
-		public ResourcePack open(ResourcePackInfo var1) {
-			return new PlaceholderResourcePack(this.type, metadata);
+		public PackResources openPrimary(PackLocationInfo location) {
+			return new PlaceholderResourcePack(this.type, this.location);
 		}
 
 		@Override
-		public ResourcePack openWithOverlays(ResourcePackInfo var1, ResourcePackProfile.Metadata metadata) {
-			return open(var1);
+		public PackResources openFull(PackLocationInfo location, Pack.Metadata metadata) {
+			return openPrimary(location);
 		}
 	}
 }
