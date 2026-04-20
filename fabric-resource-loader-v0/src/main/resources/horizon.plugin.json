@@ -13,7 +13,6 @@
     "fabric-resource-loader-v0.mixins.json"
   ],
   "wideners": [
-    "fabric-resource-loader-v0.accesswidener"
   ],
   "dependencies": {
     "minecraft": ">=1.21.8"

@@ -19,6 +19,8 @@ package net.fabricmc.fabric.impl.registry.sync;
 import java.util.Set;
 
 import io.canvasmc.horizon.service.entrypoint.DedicatedServerInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -34,6 +36,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerConfigurationNetworking;
 import net.fabricmc.fabric.impl.registry.sync.packet.DirectRegistryPacketHandler;
 
 public class FabricRegistryInit implements DedicatedServerInitializer {
+	private static final Logger LOGGER = LoggerFactory.getLogger("FabricRegistrySync");
 	private static final Set<String> VANILLA_NAMESPACES = Set.of(ResourceLocation.DEFAULT_NAMESPACE, "brigadier");
 
 	@Override
@@ -46,7 +49,11 @@ public class FabricRegistryInit implements DedicatedServerInitializer {
 				((FabricServerConfigurationNetworkHandler) context.networkHandler()).completeTask(RegistrySyncManager.SyncConfigurationTask.TYPE));
 
 		registerSyncedRegistries();
-		markExistingModdedRegistries();
+		try {
+			markExistingModdedRegistries();
+		} catch (Throwable t) {
+			LOGGER.warn("Failed to mark existing modded registries: {}", t.toString());
+		}
 		RegistrySyncManager.bootstrapRegistries();
 	}
 
@@ -115,4 +122,6 @@ public class FabricRegistryInit implements DedicatedServerInitializer {
 			}
 		}
 	}
+
+
 }

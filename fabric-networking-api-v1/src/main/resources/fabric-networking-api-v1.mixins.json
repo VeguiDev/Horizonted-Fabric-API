@@ -20,13 +20,8 @@
     "ServerCommonNetworkHandlerMixin",
     "ServerConfigurationNetworkHandlerMixin",
     "ServerLoginNetworkHandlerMixin",
-    "ServerPlayNetworkHandlerMixin",
-    "accessor.DecoderHandlerAccessor",
-    "accessor.EncoderHandlerAccessor",
-    "accessor.EntityTrackerAccessor",
-    "accessor.ServerChunkLoadingManagerAccessor",
-    "accessor.ServerCommonNetworkHandlerAccessor",
-    "accessor.ServerLoginNetworkHandlerAccessor"
+    "ServerPlayNetworkHandlerMixin"
+
   ],
   "injectors": {
     "defaultRequire": 1

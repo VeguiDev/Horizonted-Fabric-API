@@ -1,5 +1,5 @@
 {
-  "required": true,
+  "required": false,
   "package": "net.fabricmc.fabric.mixin.resource.loader",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
@@ -8,8 +8,6 @@
     "PackRepositoryMixin",
     "ResourceMixin",
     "ServerRecipeManagerMixin",
-    "ServerConfigurationPacketListenerImplMixin",
-    "SimpleResourceReloadMixin",
     "SynchronizeRegistriesTaskMixin"
   ],
   "server": [

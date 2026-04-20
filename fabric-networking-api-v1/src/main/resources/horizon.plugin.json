@@ -3,9 +3,6 @@
   "version": "${version}",
   "description": "Fabric Networking API port for Horizon",
   "entrypoints": [
-    {
-      "server_main": "dev.vegui.fabricapi.FabricNetworkingApi"
-    }
   ],
   "transformers": [],
   "authors": [

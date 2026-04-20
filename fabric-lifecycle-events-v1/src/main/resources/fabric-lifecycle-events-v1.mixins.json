@@ -1,10 +1,9 @@
 {
-  "required": true,
+  "required": false,
   "package": "net.fabricmc.fabric.mixin.event.lifecycle",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ChunkGeneratingMixin",
-    "ChunkHolderMixin",
     "DataPackContentsMixin",
     "LivingEntityMixin",
     "MinecraftServerMixin",

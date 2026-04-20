@@ -3,7 +3,7 @@ plugins {
     id "eclipse"
     id("io.canvasmc.weaver.userdev") version "2.3.12"
     id("io.canvasmc.horizon") version "1.0.0"
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 group = 'dev.vegui.masivo'
@@ -149,6 +149,14 @@ subprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
     }
+    
+    processResources {
+        inputs.property('version', version)
+        filteringCharset 'UTF-8'
+        filesMatching('horizon.plugin.json') {
+            expand version: version
+        }
+    }
 }
 
 dependencies {
@@ -183,10 +191,9 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
-    def props = [version: version]
-    inputs.properties props
+    inputs.property('version', version)
     filteringCharset 'UTF-8'
     filesMatching('horizon.plugin.json') {
-        expand props
+        expand version: version
     }
 }

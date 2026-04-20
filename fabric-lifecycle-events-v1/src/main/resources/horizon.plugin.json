@@ -4,7 +4,7 @@
   "description": "Fabric Lifecycle Events port for Horizon",
   "entrypoints": [
     {
-      "server_main": "net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl"
+      "server_postbootstrap": "net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl"
     }
   ],
   "transformers": [],
@@ -17,7 +17,6 @@
     "fabric-lifecycle-events-v1.mixins.json"
   ],
   "wideners": [
-    "fabric-lifecycle-events-v1.accesswidener"
   ],
   "dependencies": {
     "minecraft": ">=1.21.8"
