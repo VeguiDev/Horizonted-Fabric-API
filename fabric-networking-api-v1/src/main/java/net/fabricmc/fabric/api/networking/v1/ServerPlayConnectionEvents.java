@@ -16,12 +16,12 @@
 
 package net.fabricmc.fabric.api.networking.v1;
 
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 /**
  * Offers access to events related to the connection to a client on a logical server while a client is in game.
@@ -30,11 +30,12 @@ public final class ServerPlayConnectionEvents {
 	/**
 	 * Event indicating a connection entered the PLAY state, ready for registering channel handlers.
 	 *
-	 * @see ServerPlayNetworking#registerReceiver(ServerPlayNetworkHandler, CustomPayload.Id, ServerPlayNetworking.PlayPayloadHandler)
+	 * @see ServerPlayNetworking#registerReceiver(net.minecraft.server.network.ServerGamePacketListenerImpl, CustomPacketPayload.Type, ServerPlayNetworking.PlayPayloadHandler)
 	 */
 	public static final Event<Init> INIT = EventFactory.createArrayBacked(Init.class, callbacks -> (handler, server) -> {
 		for (Init callback : callbacks) {
 			callback.onPlayInit(handler, server);
+
 		}
 	});
 
@@ -65,16 +66,16 @@ public final class ServerPlayConnectionEvents {
 
 	@FunctionalInterface
 	public interface Init {
-		void onPlayInit(ServerPlayNetworkHandler handler, MinecraftServer server);
+		void onPlayInit(ServerGamePacketListenerImpl handler, MinecraftServer server);
 	}
 
 	@FunctionalInterface
 	public interface Join {
-		void onPlayReady(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server);
+		void onPlayReady(ServerGamePacketListenerImpl handler, PacketSender sender, MinecraftServer server);
 	}
 
 	@FunctionalInterface
 	public interface Disconnect {
-		void onPlayDisconnect(ServerPlayNetworkHandler handler, MinecraftServer server);
+		void onPlayDisconnect(ServerGamePacketListenerImpl handler, MinecraftServer server);
 	}
 }

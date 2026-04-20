@@ -16,9 +16,8 @@
 
 package net.fabricmc.fabric.api.registry;
 
-import net.minecraft.block.Block;
-
 import net.fabricmc.fabric.impl.content.registry.OxidizableBlocksRegistryImpl;
+import net.minecraft.world.level.block.Block;
 
 /**
  * Provides methods for registering oxidizable and waxable blocks.

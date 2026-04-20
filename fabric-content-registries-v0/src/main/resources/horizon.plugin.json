@@ -1,0 +1,21 @@
+{
+  "name": "Fabric Content Registries (v0)",
+  "version": "${version}",
+  "description": "Fabric Content Registries port for Horizon",
+  "entrypoints": [],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+    "fabric-content-registries-v0.mixins.json"
+  ],
+  "wideners": [
+    "fabric-content-registries-v0.at"
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}

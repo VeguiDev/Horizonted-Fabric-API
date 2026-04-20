@@ -1,0 +1,21 @@
+{
+  "name": "Fabric Registry Sync (v0)",
+  "version": "${version}",
+  "description": "Fabric Registry Sync port for Horizon",
+  "entrypoints": [],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+    "fabric-registry-sync-v0.mixins.json"
+  ],
+  "wideners": [
+    "fabric-registry-sync-v0.accesswidener"
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}

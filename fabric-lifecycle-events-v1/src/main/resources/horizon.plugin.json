@@ -1,0 +1,25 @@
+{
+  "name": "Fabric Lifecycle Events (v1)",
+  "version": "${version}",
+  "description": "Fabric Lifecycle Events port for Horizon",
+  "entrypoints": [
+    {
+      "server_main": "net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl"
+    }
+  ],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+    "fabric-lifecycle-events-v1.mixins.json"
+  ],
+  "wideners": [
+    "fabric-lifecycle-events-v1.accesswidener"
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}

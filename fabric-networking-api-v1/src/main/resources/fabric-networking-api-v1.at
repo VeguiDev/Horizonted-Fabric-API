@@ -1,0 +1,3 @@
+public net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket MAX_PAYLOAD_SIZE
+public net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket MAX_PAYLOAD_SIZE
+public net.minecraft.network.VarInt MAX_VARINT_SIZE

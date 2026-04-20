@@ -18,11 +18,10 @@ package net.fabricmc.fabric.api.registry;
 
 import java.util.Objects;
 
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
 
 import net.fabricmc.fabric.mixin.content.registry.ShovelItemAccessor;
 

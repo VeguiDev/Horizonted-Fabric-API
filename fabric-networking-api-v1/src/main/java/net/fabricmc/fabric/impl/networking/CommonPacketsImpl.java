@@ -19,10 +19,11 @@ package net.fabricmc.fabric.impl.networking;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import net.minecraft.network.NetworkPhase;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.server.network.ServerPlayerConfigurationTask;
+import net.minecraft.network.ConnectionProtocol;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.server.network.ConfigurationTask;
 
+import net.fabricmc.fabric.api.networking.v1.FabricServerConfigurationNetworkHandler;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerConfigurationConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerConfigurationNetworking;
@@ -47,7 +48,7 @@ public class CommonPacketsImpl {
 		ServerConfigurationNetworking.registerGlobalReceiver(CommonVersionPayload.ID, (payload, context) -> {
 			ServerConfigurationNetworkAddon addon = ServerNetworkingImpl.getAddon(context.networkHandler());
 			addon.onCommonVersionPacket(getNegotiatedVersion(payload));
-			context.networkHandler().completeTask(CommonVersionConfigurationTask.KEY);
+			((FabricServerConfigurationNetworkHandler) context.networkHandler()).completeTask(CommonVersionConfigurationTask.KEY);
 		});
 
 		ServerConfigurationNetworking.registerGlobalReceiver(CommonRegisterPayload.ID, (payload, context) -> {
@@ -58,14 +59,14 @@ public class CommonPacketsImpl {
 					throw new IllegalStateException("Negotiated common packet version: %d but received packet with version: %d".formatted(addon.getNegotiatedVersion(), payload.version()));
 				}
 
-				// Play phase hasnt started yet, add them to the pending names.
-				addon.getChannelInfoHolder().fabric_getPendingChannelsNames(NetworkPhase.PLAY).addAll(payload.channels());
+				// Play phase hasn't started yet, add them to the pending names.
+				addon.getChannelInfoHolder().fabric_getPendingChannelsNames(ConnectionProtocol.PLAY).addAll(payload.channels());
 				NetworkingImpl.LOGGER.debug("Received accepted channels from the client for play phase");
 			} else {
 				addon.onCommonRegisterPacket(payload);
 			}
 
-			context.networkHandler().completeTask(CommonRegisterConfigurationTask.KEY);
+			((FabricServerConfigurationNetworkHandler) context.networkHandler()).completeTask(CommonRegisterConfigurationTask.KEY);
 		});
 
 		// Create a configuration task to send and receive the common packets
@@ -74,41 +75,41 @@ public class CommonPacketsImpl {
 
 			if (ServerConfigurationNetworking.canSend(handler, CommonVersionPayload.ID)) {
 				// Tasks are processed in order.
-				handler.addTask(new CommonVersionConfigurationTask(addon));
+				((FabricServerConfigurationNetworkHandler) handler).addTask(new CommonVersionConfigurationTask(addon));
 
 				if (ServerConfigurationNetworking.canSend(handler, CommonRegisterPayload.ID)) {
-					handler.addTask(new CommonRegisterConfigurationTask(addon));
+					((FabricServerConfigurationNetworkHandler) handler).addTask(new CommonRegisterConfigurationTask(addon));
 				}
 			}
 		});
 	}
 
 	// A configuration phase task to send and receive the version packets.
-	private record CommonVersionConfigurationTask(ServerConfigurationNetworkAddon addon) implements ServerPlayerConfigurationTask {
-		public static final Key KEY = new Key(CommonVersionPayload.ID.id().toString());
+	private record CommonVersionConfigurationTask(ServerConfigurationNetworkAddon addon) implements ConfigurationTask {
+		public static final Type KEY = new Type(CommonVersionPayload.ID.id().toString());
 
 		@Override
-		public void sendPacket(Consumer<Packet<?>> sender) {
-			addon.sendPacket(new CommonVersionPayload(SUPPORTED_COMMON_PACKET_VERSIONS));
+		public void start(Consumer<Packet<?>> sender) {
+			sender.accept(addon.createPacket(new CommonVersionPayload(SUPPORTED_COMMON_PACKET_VERSIONS)));
 		}
 
 		@Override
-		public Key getKey() {
+		public Type type() {
 			return KEY;
 		}
 	}
 
 	// A configuration phase task to send and receive the registration packets.
-	private record CommonRegisterConfigurationTask(ServerConfigurationNetworkAddon addon) implements ServerPlayerConfigurationTask {
-		public static final Key KEY = new Key(CommonRegisterPayload.ID.id().toString());
+	private record CommonRegisterConfigurationTask(ServerConfigurationNetworkAddon addon) implements ConfigurationTask {
+		public static final Type KEY = new Type(CommonRegisterPayload.ID.id().toString());
 
 		@Override
-		public void sendPacket(Consumer<Packet<?>> sender) {
-			addon.sendPacket(new CommonRegisterPayload(addon.getNegotiatedVersion(), CommonRegisterPayload.PLAY_PHASE, ServerPlayNetworking.getGlobalReceivers()));
+		public void start(Consumer<Packet<?>> sender) {
+			sender.accept(addon.createPacket(new CommonRegisterPayload(addon.getNegotiatedVersion(), CommonRegisterPayload.PLAY_PHASE, ServerPlayNetworking.getGlobalReceivers())));
 		}
 
 		@Override
-		public Key getKey() {
+		public Type type() {
 			return KEY;
 		}
 	}

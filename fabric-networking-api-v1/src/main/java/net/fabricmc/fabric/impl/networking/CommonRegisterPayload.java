@@ -19,34 +19,36 @@ package net.fabricmc.fabric.impl.networking;
 import java.util.HashSet;
 import java.util.Set;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public record CommonRegisterPayload(int version, String phase, Set<Identifier> channels) implements CustomPayload {
-	public static final CustomPayload.Id<CommonRegisterPayload> ID = new Id<>(Identifier.of("c:register"));
-	public static final PacketCodec<PacketByteBuf, CommonRegisterPayload> CODEC = CustomPayload.codecOf(CommonRegisterPayload::write, CommonRegisterPayload::new);
+public record CommonRegisterPayload(int version, String phase, Set<ResourceLocation> channels) implements CustomPacketPayload {
+	public static final StreamCodec<FriendlyByteBuf, CommonRegisterPayload> STREAM_CODEC = CustomPacketPayload.codec(CommonRegisterPayload::write, CommonRegisterPayload::new);
+	public static final CustomPacketPayload.Type<CommonRegisterPayload> TYPE = CustomPacketPayload.createType("c:register");
+	public static final StreamCodec<FriendlyByteBuf, CommonRegisterPayload> CODEC = STREAM_CODEC;
+	public static final CustomPacketPayload.Type<CommonRegisterPayload> ID = TYPE;
 
 	public static final String PLAY_PHASE = "play";
 	public static final String CONFIGURATION_PHASE = "configuration";
 
-	private CommonRegisterPayload(PacketByteBuf buf) {
+	private CommonRegisterPayload(FriendlyByteBuf buf) {
 		this(
 				buf.readVarInt(),
 				buf.readString(),
-				buf.readCollection(HashSet::new, PacketByteBuf::readIdentifier)
+				buf.readCollection(HashSet::new, FriendlyByteBuf::readResourceLocation)
 		);
 	}
 
-	public void write(PacketByteBuf buf) {
+	private void write(FriendlyByteBuf buf) {
 		buf.writeVarInt(version);
 		buf.writeString(phase);
-		buf.writeCollection(channels, PacketByteBuf::writeIdentifier);
+		buf.writeCollection(channels, FriendlyByteBuf::writeResourceLocation);
 	}
 
 	@Override
-	public Id<CommonRegisterPayload> getId() {
-		return ID;
+	public CustomPacketPayload.Type<CommonRegisterPayload> type() {
+		return TYPE;
 	}
 }

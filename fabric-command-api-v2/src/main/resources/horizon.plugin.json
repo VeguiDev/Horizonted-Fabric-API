@@ -1,0 +1,25 @@
+{
+  "name": "Fabric Commands API (v2)",
+  "version": "${version}",
+  "description": "Fabric Commands API port for Horizon",
+  "entrypoints": [
+    {
+      "server_main": "dev.vegui.fabricapi.FabricNetworkingApi"
+    }
+  ],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+    "fabric-commands-api-v2.mixins.json"
+  ],
+  "wideners": [
+    "fabric-commands-api-v2.at"
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}

@@ -16,25 +16,26 @@
 
 package net.fabricmc.fabric.impl.networking;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record CommonVersionPayload(int[] versions) implements CustomPayload {
-	public static final PacketCodec<PacketByteBuf, CommonVersionPayload> CODEC = CustomPayload.codecOf(CommonVersionPayload::write, CommonVersionPayload::new);
-	public static final CustomPayload.Id<CommonVersionPayload> ID = new Id<>(Identifier.of("c:version"));
+public record CommonVersionPayload(int[] versions) implements CustomPacketPayload {
+	public static final StreamCodec<FriendlyByteBuf, CommonVersionPayload> STREAM_CODEC = CustomPacketPayload.codec(CommonVersionPayload::write, CommonVersionPayload::new);
+	public static final CustomPacketPayload.Type<CommonVersionPayload> TYPE = CustomPacketPayload.createType("c:version");
+	public static final StreamCodec<FriendlyByteBuf, CommonVersionPayload> CODEC = STREAM_CODEC;
+	public static final CustomPacketPayload.Type<CommonVersionPayload> ID = TYPE;
 
-	private CommonVersionPayload(PacketByteBuf buf) {
+	private CommonVersionPayload(FriendlyByteBuf buf) {
 		this(buf.readIntArray());
 	}
 
-	public void write(PacketByteBuf buf) {
+	private void write(FriendlyByteBuf buf) {
 		buf.writeIntArray(versions);
 	}
 
 	@Override
-	public Id<? extends CustomPayload> getId() {
-		return ID;
+	public CustomPacketPayload.Type<CommonVersionPayload> type() {
+		return TYPE;
 	}
 }

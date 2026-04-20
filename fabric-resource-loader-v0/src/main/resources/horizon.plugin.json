@@ -1,0 +1,21 @@
+{
+  "name": "Fabric Resource Loader (v0)",
+  "version": "${version}",
+  "description": "Fabric Resource Loader port for Horizon",
+  "entrypoints": [],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+    "fabric-resource-loader-v0.mixins.json"
+  ],
+  "wideners": [
+    "fabric-resource-loader-v0.accesswidener"
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}

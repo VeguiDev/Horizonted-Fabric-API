@@ -17,6 +17,10 @@
 package net.fabricmc.fabric.mixin.networking;
 
 import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.commands.DebugConfigCommand;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -25,31 +29,25 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.SharedConstants;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.DebugConfigCommand;
-import net.minecraft.server.command.ServerCommandSource;
 
-import net.fabricmc.loader.api.FabricLoader;
-
-@Mixin(CommandManager.class)
+@Mixin(Commands.class)
 public class CommandManagerMixin {
 	@Shadow
 	@Final
-	private CommandDispatcher<ServerCommandSource> dispatcher;
+	private CommandDispatcher<CommandSourceStack> dispatcher;
 
-	@Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/dedicated/command/BanIpCommand;register(Lcom/mojang/brigadier/CommandDispatcher;)V"))
-	private void init(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
-		if (SharedConstants.isDevelopment) {
+	@Inject(method = "<init>(Lnet/minecraft/commands/Commands$CommandSelection;Lnet/minecraft/commands/CommandBuildContext;Z)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/commands/BanIpCommands;register(Lcom/mojang/brigadier/CommandDispatcher;)V"))
+	private void init(Commands.CommandSelection selection, CommandBuildContext context, boolean modern, CallbackInfo ci) {
+		if (SharedConstants.IS_RUNNING_IN_IDE) {
 			// Command is registered when isDevelopment is set.
 			return;
 		}
 
-		if (!FabricLoader.getInstance().isDevelopmentEnvironment()) {
-			// Only register this command in a dev env
-			return;
-		}
+//		if (!FabricLoader.getInstance().isDevelopmentEnvironment()) {
+//			// Only register this command in a dev env
+//			return;
+//		}
 
-		DebugConfigCommand.register(this.dispatcher, commandRegistryAccess);
+		DebugConfigCommand.register(this.dispatcher, context);
 	}
 }

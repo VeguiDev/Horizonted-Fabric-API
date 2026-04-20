@@ -1,0 +1,25 @@
+{
+  "name": "Fabric Networking API (v1)",
+  "version": "${version}",
+  "description": "Fabric Networking API port for Horizon",
+  "entrypoints": [
+    {
+      "server_main": "dev.vegui.fabricapi.FabricNetworkingApi"
+    }
+  ],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+    "fabric-networking-api-v1.mixins.json"
+  ],
+  "wideners": [
+    "fabric-networking-api-v1.at"
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}

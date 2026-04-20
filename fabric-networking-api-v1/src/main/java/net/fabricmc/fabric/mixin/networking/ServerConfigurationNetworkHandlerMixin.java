@@ -23,6 +23,14 @@ import java.util.function.Function;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.Connection;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.common.ServerCommonPacketListener;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.server.network.ConfigurationTask;
+import net.minecraft.server.network.ServerCommonPacketListenerImpl;
+import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,14 +40,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ConnectedClientData;
-import net.minecraft.server.network.ServerCommonNetworkHandler;
-import net.minecraft.server.network.ServerConfigurationNetworkHandler;
-import net.minecraft.server.network.ServerPlayerConfigurationTask;
 
 import net.fabricmc.fabric.api.networking.v1.FabricServerConfigurationNetworkHandler;
 import net.fabricmc.fabric.impl.networking.FabricRegistryByteBuf;
@@ -47,24 +48,24 @@ import net.fabricmc.fabric.impl.networking.NetworkHandlerExtensions;
 import net.fabricmc.fabric.impl.networking.server.ServerConfigurationNetworkAddon;
 
 // We want to apply a bit earlier than other mods which may not use us in order to prevent refCount issues
-@Mixin(value = ServerConfigurationNetworkHandler.class, priority = 900)
-public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommonNetworkHandler implements NetworkHandlerExtensions, FabricServerConfigurationNetworkHandler {
+@Mixin(value = ServerConfigurationPacketListenerImpl.class, priority = 900)
+public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommonPacketListenerImpl implements NetworkHandlerExtensions, FabricServerConfigurationNetworkHandler {
 	@Shadow
 	@Nullable
-	private ServerPlayerConfigurationTask currentTask;
+    public ConfigurationTask currentTask;
 
 	@Shadow
-	protected abstract void onTaskFinished(ServerPlayerConfigurationTask.Key key);
+    public abstract void finishCurrentTask(ConfigurationTask.Type type);
 
 	@Shadow
 	@Final
-	private Queue<ServerPlayerConfigurationTask> tasks;
+	private Queue<ConfigurationTask> configurationTasks;
 
 	@Shadow
-	public abstract boolean isConnectionOpen();
+	public abstract boolean isAcceptingMessages();
 
 	@Shadow
-	public abstract void sendConfigurations();
+	public abstract void startConfiguration();
 
 	@Unique
 	private ServerConfigurationNetworkAddon addon;
@@ -75,18 +76,18 @@ public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommo
 	@Unique
 	private boolean earlyTaskExecution;
 
-	public ServerConfigurationNetworkHandlerMixin(MinecraftServer server, ClientConnection connection, ConnectedClientData arg) {
+	public ServerConfigurationNetworkHandlerMixin(MinecraftServer server, Connection connection, CommonListenerCookie arg) {
 		super(server, connection, arg);
 	}
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void initAddon(CallbackInfo ci) {
-		this.addon = new ServerConfigurationNetworkAddon((ServerConfigurationNetworkHandler) (Object) this, this.server);
-		// A bit of a hack but it allows the field above to be set in case someone registers handlers during INIT event which refers to said field
+		this.addon = new ServerConfigurationNetworkAddon((ServerConfigurationPacketListenerImpl) (Object) this, this.server);
+		// A bit of a hack, but it allows the field above to be set in case someone registers handlers during INIT event which refers to said field
 		this.addon.lateInit();
 	}
 
-	@Inject(method = "sendConfigurations", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "startConfiguration", at = @At("HEAD"), cancellable = true)
 	private void onClientReady(CallbackInfo ci) {
 		// Send the initial channel registration packet
 		if (this.addon.startConfiguration()) {
@@ -114,7 +115,7 @@ public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommo
 
 		// All early tasks should have been completed
 		assert currentTask == null;
-		assert tasks.isEmpty();
+		assert configurationTasks.isEmpty();
 
 		// Run the vanilla tasks.
 		this.addon.configuration();
@@ -127,18 +128,18 @@ public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommo
 		}
 
 		if (this.currentTask != null) {
-			throw new IllegalStateException("Task " + this.currentTask.getKey().id() + " has not finished yet");
+			throw new IllegalStateException("Task " + this.currentTask.type().id() + " has not finished yet");
 		}
 
-		if (!this.isConnectionOpen()) {
+		if (!this.isAcceptingMessages()) {
 			return false;
 		}
 
-		final ServerPlayerConfigurationTask task = this.tasks.poll();
+		final ConfigurationTask task = this.configurationTasks.poll();
 
 		if (task != null) {
 			this.currentTask = task;
-			task.sendPacket(this::sendPacket);
+			task.start(this::send);
 			return true;
 		}
 
@@ -151,29 +152,29 @@ public abstract class ServerConfigurationNetworkHandlerMixin extends ServerCommo
 	}
 
 	@Override
-	public void addTask(ServerPlayerConfigurationTask task) {
-		tasks.add(task);
+	public void addTask(ConfigurationTask task) {
+		configurationTasks.add(task);
 	}
 
 	@Override
-	public void completeTask(ServerPlayerConfigurationTask.Key key) {
+	public void completeTask(ConfigurationTask.Type type) {
 		if (!earlyTaskExecution) {
-			onTaskFinished(key);
+			finishCurrentTask(type);
 			return;
 		}
 
-		final ServerPlayerConfigurationTask.Key currentKey = this.currentTask != null ? this.currentTask.getKey() : null;
+		final ConfigurationTask.Type currentKey = this.currentTask != null ? this.currentTask.type() : null;
 
-		if (!key.equals(currentKey)) {
-			throw new IllegalStateException("Unexpected request for task finish, current task: " + currentKey + ", requested: " + key);
+		if (!type.equals(currentKey)) {
+			throw new IllegalStateException("Unexpected request for task finish, current task: " + currentKey + ", requested: " + type);
 		}
 
 		this.currentTask = null;
-		sendConfigurations();
+		startConfiguration();
 	}
 
-	@WrapOperation(method = "onReady", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/RegistryByteBuf;makeFactory(Lnet/minecraft/registry/DynamicRegistryManager;)Ljava/util/function/Function;"))
-	private Function<ByteBuf, RegistryByteBuf> bindChannelInfo(DynamicRegistryManager registryManager, Operation<Function<ByteBuf, RegistryByteBuf>> original) {
+	@WrapOperation(method = "handleConfigurationFinished", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/RegistryFriendlyByteBuf;decorator(Lnet/minecraft/core/RegistryAccess;)Ljava/util/function/Function;"))
+	private Function<ByteBuf, RegistryFriendlyByteBuf> bindChannelInfo(RegistryAccess registryManager, Operation<Function<ByteBuf, RegistryFriendlyByteBuf>> original) {
 		return original.call(registryManager).andThen(registryByteBuf -> {
 			FabricRegistryByteBuf fabricRegistryByteBuf = (FabricRegistryByteBuf) registryByteBuf;
 			fabricRegistryByteBuf.fabric_setSendableConfigurationChannels(Set.copyOf(addon.getSendableChannels()));

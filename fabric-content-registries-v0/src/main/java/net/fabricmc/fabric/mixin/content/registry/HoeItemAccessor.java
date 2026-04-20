@@ -21,17 +21,16 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.mojang.datafixers.util.Pair;
+import net.minecraft.world.item.HoeItem;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.Block;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import net.minecraft.block.Block;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.ItemUsageContext;
-
 @Mixin(HoeItem.class)
 public interface HoeItemAccessor {
-	@Accessor("TILLING_ACTIONS")
-	static Map<Block, Pair<Predicate<ItemUsageContext>, Consumer<ItemUsageContext>>> getTillingActions() {
+	@Accessor("TILLABLES")
+	static Map<Block, Pair<Predicate<UseOnContext>, Consumer<UseOnContext>>> getTillingActions() {
 		throw new AssertionError("Untransformed @Accessor");
 	}
 }

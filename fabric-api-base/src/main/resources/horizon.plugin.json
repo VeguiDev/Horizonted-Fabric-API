@@ -1,0 +1,21 @@
+{
+  "name": "Fabric Base API",
+  "version": "${version}",
+  "description": "Fabric Base API port for Horizon",
+  "entrypoints": [],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+
+  ],
+  "wideners": [
+
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}
