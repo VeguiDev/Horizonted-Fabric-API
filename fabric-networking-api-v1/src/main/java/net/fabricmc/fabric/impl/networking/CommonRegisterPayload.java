@@ -26,7 +26,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public record CommonRegisterPayload(int version, String phase, Set<ResourceLocation> channels) implements CustomPacketPayload {
 	public static final StreamCodec<FriendlyByteBuf, CommonRegisterPayload> STREAM_CODEC = CustomPacketPayload.codec(CommonRegisterPayload::write, CommonRegisterPayload::new);
-	public static final CustomPacketPayload.Type<CommonRegisterPayload> TYPE = CustomPacketPayload.createType("c:register");
+	public static final CustomPacketPayload.Type<CommonRegisterPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("c", "register"));
 	public static final StreamCodec<FriendlyByteBuf, CommonRegisterPayload> CODEC = STREAM_CODEC;
 	public static final CustomPacketPayload.Type<CommonRegisterPayload> ID = TYPE;
 

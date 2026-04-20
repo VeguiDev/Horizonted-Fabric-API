@@ -17,139 +17,107 @@
 package net.fabricmc.fabric.test.networking.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import net.minecraft.Bootstrap;
-import net.minecraft.SharedConstants;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.network.packet.c2s.common.CustomPayloadC2SPacket;
-import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.ConnectionProtocol;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.impl.networking.PayloadTypeRegistryImpl;
 
 public class PayloadTypeRegistryTests {
-	@BeforeAll
-	static void beforeAll() {
-		SharedConstants.createGameVersion();
-		Bootstrap.initialize();
+	@Test
+	void configurationRegistrationAndLookup() {
+		CustomPacketPayload.Type<ConfigPayload> id = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("fabric_test", "config"));
+		PayloadTypeRegistry.configurationC2S().register(id, ConfigPayload.CODEC);
 
-		PayloadTypeRegistry.playC2S().register(C2SPlayPayload.ID, C2SPlayPayload.CODEC);
-		PayloadTypeRegistry.playS2C().register(S2CPlayPayload.ID, S2CPlayPayload.CODEC);
-
-		PayloadTypeRegistry.configurationC2S().register(C2SConfigPayload.ID, C2SConfigPayload.CODEC);
-		PayloadTypeRegistry.configurationS2C().register(S2CConfigPayload.ID, S2CConfigPayload.CODEC);
+		assertNotNull(PayloadTypeRegistryImpl.CONFIGURATION_C2S.get(id));
+		assertEquals(ConnectionProtocol.CONFIGURATION, PayloadTypeRegistryImpl.CONFIGURATION_C2S.getPhase());
+		assertEquals(PacketFlow.SERVERBOUND, PayloadTypeRegistryImpl.CONFIGURATION_C2S.getSide());
 	}
 
 	@Test
-	void C2SPlay() {
-		RegistryByteBuf buf = new RegistryByteBuf(PacketByteBufs.create(), null);
+	void playRegistrationAndLookup() {
+		CustomPacketPayload.Type<PlayPayload> id = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("fabric_test", "play"));
+		PayloadTypeRegistry.playS2C().register(id, PlayPayload.CODEC);
 
-		var packetToSend = new CustomPayloadC2SPacket(new C2SPlayPayload("Hello"));
-		CustomPayloadC2SPacket.CODEC.encode(buf, packetToSend);
-
-		CustomPayloadC2SPacket decodedPacket = CustomPayloadC2SPacket.CODEC.decode(buf);
-
-		if (decodedPacket.payload() instanceof C2SPlayPayload payload) {
-			assertEquals("Hello", payload.value());
-		} else {
-			fail();
-		}
+		assertNotNull(PayloadTypeRegistryImpl.PLAY_S2C.get(id));
+		assertEquals(ConnectionProtocol.PLAY, PayloadTypeRegistryImpl.PLAY_S2C.getPhase());
+		assertEquals(PacketFlow.CLIENTBOUND, PayloadTypeRegistryImpl.PLAY_S2C.getSide());
 	}
 
 	@Test
-	void S2CPlay() {
-		RegistryByteBuf buf = new RegistryByteBuf(PacketByteBufs.create(), null);
+	void duplicateRegistrationFails() {
+		CustomPacketPayload.Type<ConfigPayload> id = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("fabric_test", "duplicate"));
+		PayloadTypeRegistry.configurationS2C().register(id, ConfigPayload.CODEC);
 
-		var packetToSend = new CustomPayloadS2CPacket(new S2CPlayPayload("Hello"));
-		CustomPayloadS2CPacket.PLAY_CODEC.encode(buf, packetToSend);
-
-		CustomPayloadS2CPacket decodedPacket = CustomPayloadS2CPacket.PLAY_CODEC.decode(buf);
-
-		if (decodedPacket.payload() instanceof S2CPlayPayload payload) {
-			assertEquals("Hello", payload.value());
-		} else {
-			fail();
-		}
+		assertThrows(IllegalArgumentException.class, () -> PayloadTypeRegistry.configurationS2C().register(id, ConfigPayload.CODEC));
 	}
 
 	@Test
-	void C2SConfig() {
-		PacketByteBuf buf = PacketByteBufs.create();
+	void largeRegistrationStoresMaxPacketSize() {
+		CustomPacketPayload.Type<ConfigPayload> id = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("fabric_test", "large"));
+		PayloadTypeRegistry.configurationS2C().registerLarge(id, ConfigPayload.CODEC, 1024 * 1024);
 
-		var packetToSend = new CustomPayloadC2SPacket(new C2SConfigPayload("Hello"));
-		CustomPayloadC2SPacket.CODEC.encode(buf, packetToSend);
-
-		CustomPayloadC2SPacket decodedPacket = CustomPayloadC2SPacket.CODEC.decode(buf);
-
-		if (decodedPacket.payload() instanceof C2SConfigPayload payload) {
-			assertEquals("Hello", payload.value());
-		} else {
-			fail();
-		}
+		assertNotNull(PayloadTypeRegistryImpl.CONFIGURATION_S2C.get(id));
+		assertEquals(true, PayloadTypeRegistryImpl.CONFIGURATION_S2C.getMaxPacketSize(id.id()) > 0);
 	}
 
 	@Test
-	void S2CConfig() {
-		PacketByteBuf buf = PacketByteBufs.create();
+	void configurationPayloadCodecRoundTrip() {
+		FriendlyByteBuf buf = PacketByteBufs.create();
+		ConfigPayload expected = new ConfigPayload("hello");
 
-		var packetToSend = new CustomPayloadS2CPacket(new S2CConfigPayload("Hello"));
-		CustomPayloadS2CPacket.CONFIGURATION_CODEC.encode(buf, packetToSend);
+		ConfigPayload.CODEC.encode(buf, expected);
+		ConfigPayload actual = ConfigPayload.CODEC.decode(buf);
 
-		CustomPayloadS2CPacket decodedPacket = CustomPayloadS2CPacket.CONFIGURATION_CODEC.decode(buf);
+		assertEquals(expected.value(), actual.value());
+	}
 
-		if (decodedPacket.payload() instanceof S2CConfigPayload payload) {
-			assertEquals("Hello", payload.value());
-		} else {
-			fail();
+	@Test
+	void playPayloadCodecRoundTrip() {
+		RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(PacketByteBufs.create(), RegistryAccess.EMPTY);
+		PlayPayload expected = new PlayPayload("hello");
+
+		PlayPayload.CODEC.encode(buf, expected);
+		PlayPayload actual = PlayPayload.CODEC.decode(buf);
+
+		assertEquals(expected.value(), actual.value());
+	}
+
+	private record ConfigPayload(String value) implements CustomPacketPayload {
+		private static final CustomPacketPayload.Type<ConfigPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("fabric_test", "config_payload"));
+		private static final StreamCodec<FriendlyByteBuf, ConfigPayload> CODEC = StreamCodec.ofMember(
+				(ConfigPayload payload, FriendlyByteBuf buf) -> buf.writeUtf(payload.value()),
+				(FriendlyByteBuf buf) -> new ConfigPayload(buf.readUtf())
+		);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
 		}
 	}
 
-	private record C2SPlayPayload(String value) implements CustomPayload {
-		public static final CustomPayload.Id<C2SPlayPayload> ID = new Id<>(Identifier.of("fabric:c2s_play"));
-		public static final PacketCodec<RegistryByteBuf, C2SPlayPayload> CODEC = PacketCodecs.STRING.xmap(C2SPlayPayload::new, C2SPlayPayload::value).cast();
+	private record PlayPayload(String value) implements CustomPacketPayload {
+		private static final CustomPacketPayload.Type<PlayPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("fabric_test", "play_payload"));
+		private static final StreamCodec<RegistryFriendlyByteBuf, PlayPayload> CODEC = StreamCodec.ofMember(
+				(PlayPayload payload, RegistryFriendlyByteBuf buf) -> buf.writeUtf(payload.value()),
+				(RegistryFriendlyByteBuf buf) -> new PlayPayload(buf.readUtf())
+		);
 
 		@Override
-		public Id<? extends CustomPayload> getId() {
-			return ID;
-		}
-	}
-
-	private record S2CPlayPayload(String value) implements CustomPayload {
-		public static final CustomPayload.Id<S2CPlayPayload> ID = new Id<>(Identifier.of("fabric:s2c_play"));
-		public static final PacketCodec<RegistryByteBuf, S2CPlayPayload> CODEC = PacketCodecs.STRING.xmap(S2CPlayPayload::new, S2CPlayPayload::value).cast();
-
-		@Override
-		public Id<? extends CustomPayload> getId() {
-			return ID;
-		}
-	}
-
-	private record C2SConfigPayload(String value) implements CustomPayload {
-		public static final CustomPayload.Id<C2SConfigPayload> ID = new Id<>(Identifier.of("fabric:c2s_config"));
-		public static final PacketCodec<PacketByteBuf, C2SConfigPayload> CODEC = PacketCodecs.STRING.xmap(C2SConfigPayload::new, C2SConfigPayload::value).cast();
-
-		@Override
-		public Id<? extends CustomPayload> getId() {
-			return ID;
-		}
-	}
-
-	private record S2CConfigPayload(String value) implements CustomPayload {
-		public static final CustomPayload.Id<S2CConfigPayload> ID = new Id<>(Identifier.of("fabric:s2c_config"));
-		public static final PacketCodec<PacketByteBuf, S2CConfigPayload> CODEC = PacketCodecs.STRING.xmap(S2CConfigPayload::new, S2CConfigPayload::value).cast();
-
-		@Override
-		public Id<? extends CustomPayload> getId() {
-			return ID;
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
 		}
 	}
 }

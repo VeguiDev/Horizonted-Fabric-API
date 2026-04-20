@@ -1,0 +1,17 @@
+{
+  "name": "Horizonted Fabric API",
+  "version": "${version}",
+  "description": "Core API module providing key hooks and intercompatibility features.",
+  "entrypoints": [],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [],
+  "wideners": [],
+  "dependencies": {
+    "minecraft": ">=1.21.8"
+  }
+}

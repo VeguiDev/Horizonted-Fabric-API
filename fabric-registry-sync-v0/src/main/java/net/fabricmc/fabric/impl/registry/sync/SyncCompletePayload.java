@@ -19,10 +19,11 @@ package net.fabricmc.fabric.impl.registry.sync;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 public final class SyncCompletePayload implements CustomPacketPayload {
 	public static final SyncCompletePayload INSTANCE = new SyncCompletePayload();
-	public static final CustomPacketPayload.Type<SyncCompletePayload> TYPE = CustomPacketPayload.createType("fabric:registry/sync/complete");
+	public static final CustomPacketPayload.Type<SyncCompletePayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("fabric", "registry/sync/complete"));
 	public static final StreamCodec<FriendlyByteBuf, SyncCompletePayload> STREAM_CODEC = StreamCodec.unit(INSTANCE);
 	public static final CustomPacketPayload.Type<SyncCompletePayload> ID = TYPE;
 	public static final StreamCodec<FriendlyByteBuf, SyncCompletePayload> CODEC = STREAM_CODEC;

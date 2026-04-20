@@ -19,10 +19,11 @@ package net.fabricmc.fabric.impl.networking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 public record CommonVersionPayload(int[] versions) implements CustomPacketPayload {
 	public static final StreamCodec<FriendlyByteBuf, CommonVersionPayload> STREAM_CODEC = CustomPacketPayload.codec(CommonVersionPayload::write, CommonVersionPayload::new);
-	public static final CustomPacketPayload.Type<CommonVersionPayload> TYPE = CustomPacketPayload.createType("c:version");
+	public static final CustomPacketPayload.Type<CommonVersionPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("c", "version"));
 	public static final StreamCodec<FriendlyByteBuf, CommonVersionPayload> CODEC = STREAM_CODEC;
 	public static final CustomPacketPayload.Type<CommonVersionPayload> ID = TYPE;
 
