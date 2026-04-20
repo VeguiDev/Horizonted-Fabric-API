@@ -9,9 +9,9 @@
     "FireBlockMixin",
     "FuelRegistryMixin",
     "GiveGiftsToHeroTaskMixin",
-    "HoneycombItemMixin",
+    "HoneycombItemAccessor",
     "LandPathNodeMakerMixin",
-    "OxidizableMixin",
+    "WeatheringCopperAccessor",
     "PathContextMixin",
     "VillagerEntityMixin"
   ],

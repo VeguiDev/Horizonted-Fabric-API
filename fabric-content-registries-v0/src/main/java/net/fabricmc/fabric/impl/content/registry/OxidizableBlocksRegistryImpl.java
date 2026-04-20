@@ -16,19 +16,28 @@
 
 package net.fabricmc.fabric.impl.content.registry;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import net.fabricmc.fabric.mixin.content.registry.HoneycombItemAccessor;
+import net.fabricmc.fabric.mixin.content.registry.WeatheringCopperAccessor;
 import net.minecraft.world.item.HoneycombItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.WeatheringCopper;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class OxidizableBlocksRegistryImpl {
+	private static volatile boolean waxablesAreMutable;
+	private static volatile boolean oxidizablesAreMutable;
+
 	private OxidizableBlocksRegistryImpl() {
 	}
 
 	public static void registerOxidizableBlockPair(Block less, Block more) {
 		Objects.requireNonNull(less, "Oxidizable block cannot be null!");
 		Objects.requireNonNull(more, "Oxidizable block cannot be null!");
+		ensureOxidizableMapIsMutable();
 		WeatheringCopper.NEXT_BY_BLOCK.get().put(less, more);
 		// Fix #4371
 		refreshRandomTickCache(less);
@@ -38,7 +47,46 @@ public final class OxidizableBlocksRegistryImpl {
 	public static void registerWaxableBlockPair(Block unwaxed, Block waxed) {
 		Objects.requireNonNull(unwaxed, "Unwaxed block cannot be null!");
 		Objects.requireNonNull(waxed, "Waxed block cannot be null!");
+		ensureWaxableMapIsMutable();
 		HoneycombItem.WAXABLES.get().put(unwaxed, waxed);
+	}
+
+	private static void ensureOxidizableMapIsMutable() {
+		if (oxidizablesAreMutable) {
+			return;
+		}
+
+		synchronized (OxidizableBlocksRegistryImpl.class) {
+			if (oxidizablesAreMutable) {
+				return;
+			}
+
+			BiMap<Block, Block> mutableMap = HashBiMap.create(WeatheringCopperAccessor.fabric_getNextByBlockSupplier().get());
+			Supplier<BiMap<Block, Block>> nextSupplier = () -> mutableMap;
+			Supplier<BiMap<Block, Block>> previousSupplier = mutableMap::inverse;
+			WeatheringCopperAccessor.fabric_setNextByBlockSupplier(nextSupplier);
+			WeatheringCopperAccessor.fabric_setPreviousByBlockSupplier(previousSupplier);
+			oxidizablesAreMutable = true;
+		}
+	}
+
+	private static void ensureWaxableMapIsMutable() {
+		if (waxablesAreMutable) {
+			return;
+		}
+
+		synchronized (OxidizableBlocksRegistryImpl.class) {
+			if (waxablesAreMutable) {
+				return;
+			}
+
+			BiMap<Block, Block> mutableMap = HashBiMap.create(HoneycombItemAccessor.fabric_getWaxablesSupplier().get());
+			Supplier<BiMap<Block, Block>> waxablesSupplier = () -> mutableMap;
+			Supplier<BiMap<Block, Block>> unwaxedSupplier = mutableMap::inverse;
+			HoneycombItemAccessor.fabric_setWaxablesSupplier(waxablesSupplier);
+			HoneycombItemAccessor.fabric_setWaxOffByBlockSupplier(unwaxedSupplier);
+			waxablesAreMutable = true;
+		}
 	}
 
 	private static void refreshRandomTickCache(Block block) {

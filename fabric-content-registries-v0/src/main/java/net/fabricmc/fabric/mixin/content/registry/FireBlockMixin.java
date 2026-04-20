@@ -39,12 +39,12 @@ public class FireBlockMixin implements FireBlockHooks {
 	private FlammableBlockRegistryImpl registry;
 
 	@Shadow
-	private int getSpreadChance(BlockState block_1) {
+	private int getIgniteOdds(BlockState block_1) {
 		return 0;
 	}
 
 	@Shadow
-	private int getBurnChance(BlockState block_1) {
+	private int getBurnOdds(BlockState block_1) {
 		return 0;
 	}
 
@@ -83,6 +83,6 @@ public class FireBlockMixin implements FireBlockHooks {
 
 	@Override
 	public FlammableBlockRegistry.Entry fabric_getVanillaEntry(BlockState block) {
-		return new FlammableBlockRegistry.Entry(getBurnChance(block), getSpreadChance(block));
+		return new FlammableBlockRegistry.Entry(getIgniteOdds(block), getBurnOdds(block));
 	}
 }
