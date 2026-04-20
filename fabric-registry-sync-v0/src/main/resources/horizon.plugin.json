@@ -2,7 +2,11 @@
   "name": "Fabric Registry Sync (v0)",
   "version": "${version}",
   "description": "Fabric Registry Sync port for Horizon",
-  "entrypoints": [],
+  "entrypoints": [
+    {
+      "server_main": "net.fabricmc.fabric.impl.registry.sync.FabricRegistryInit"
+    }
+  ],
   "transformers": [],
   "authors": [
     "VeguiDev",

@@ -3,7 +3,9 @@
   "package": "net.fabricmc.fabric.mixin.registry.sync",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "MappedRegistryMixin",
     "RegistriesAccessor",
+    "RegistriesMixin",
     "RegistryMixin"
   ],
   "injectors": {
