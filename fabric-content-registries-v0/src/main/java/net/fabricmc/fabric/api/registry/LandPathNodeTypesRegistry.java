@@ -224,6 +224,6 @@ public final class LandPathNodeTypesRegistry {
 		 * @return the custom {@link PathType} registered for the specified block state at the specified position.
 		 */
 		@Nullable
-		PathType getPathNodeType(BlockState state, BlockView world, BlockPos pos, boolean neighbor);
+		PathType getPathNodeType(BlockState state, BlockGetter world, BlockPos pos, boolean neighbor);
 	}
 }
