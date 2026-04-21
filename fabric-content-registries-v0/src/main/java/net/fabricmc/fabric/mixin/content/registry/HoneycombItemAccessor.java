@@ -20,7 +20,6 @@ import com.google.common.collect.BiMap;
 import net.minecraft.world.item.HoneycombItem;
 import net.minecraft.world.level.block.Block;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.function.Supplier;
@@ -32,20 +31,8 @@ public interface HoneycombItemAccessor {
 		throw new AssertionError("Untransformed @Accessor");
 	}
 
-	@Mutable
-	@Accessor("WAXABLES")
-	static void fabric_setWaxablesSupplier(Supplier<BiMap<Block, Block>> supplier) {
-		throw new AssertionError("Untransformed @Accessor");
-	}
-
 	@Accessor("WAX_OFF_BY_BLOCK")
 	static Supplier<BiMap<Block, Block>> fabric_getWaxOffByBlockSupplier() {
-		throw new AssertionError("Untransformed @Accessor");
-	}
-
-	@Mutable
-	@Accessor("WAX_OFF_BY_BLOCK")
-	static void fabric_setWaxOffByBlockSupplier(Supplier<BiMap<Block, Block>> supplier) {
 		throw new AssertionError("Untransformed @Accessor");
 	}
 }

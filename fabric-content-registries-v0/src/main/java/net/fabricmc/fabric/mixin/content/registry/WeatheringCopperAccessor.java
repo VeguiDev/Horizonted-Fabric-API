@@ -20,7 +20,6 @@ import com.google.common.collect.BiMap;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.WeatheringCopper;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.function.Supplier;
@@ -32,20 +31,8 @@ public interface WeatheringCopperAccessor {
 		throw new AssertionError("Untransformed @Accessor");
 	}
 
-	@Mutable
-	@Accessor("NEXT_BY_BLOCK")
-	static void fabric_setNextByBlockSupplier(Supplier<BiMap<Block, Block>> supplier) {
-		throw new AssertionError("Untransformed @Accessor");
-	}
-
 	@Accessor("PREVIOUS_BY_BLOCK")
 	static Supplier<BiMap<Block, Block>> fabric_getPreviousByBlockSupplier() {
-		throw new AssertionError("Untransformed @Accessor");
-	}
-
-	@Mutable
-	@Accessor("PREVIOUS_BY_BLOCK")
-	static void fabric_setPreviousByBlockSupplier(Supplier<BiMap<Block, Block>> supplier) {
 		throw new AssertionError("Untransformed @Accessor");
 	}
 }

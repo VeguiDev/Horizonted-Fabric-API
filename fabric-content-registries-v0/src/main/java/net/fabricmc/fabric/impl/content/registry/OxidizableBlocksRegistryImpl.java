@@ -23,11 +23,14 @@ import net.fabricmc.fabric.mixin.content.registry.WeatheringCopperAccessor;
 import net.minecraft.world.item.HoneycombItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.WeatheringCopper;
+import sun.misc.Unsafe;
 
+import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 public final class OxidizableBlocksRegistryImpl {
+	private static final Unsafe UNSAFE = getUnsafe();
 	private static volatile boolean waxablesAreMutable;
 	private static volatile boolean oxidizablesAreMutable;
 
@@ -64,8 +67,8 @@ public final class OxidizableBlocksRegistryImpl {
 			BiMap<Block, Block> mutableMap = HashBiMap.create(WeatheringCopperAccessor.fabric_getNextByBlockSupplier().get());
 			Supplier<BiMap<Block, Block>> nextSupplier = () -> mutableMap;
 			Supplier<BiMap<Block, Block>> previousSupplier = mutableMap::inverse;
-			WeatheringCopperAccessor.fabric_setNextByBlockSupplier(nextSupplier);
-			WeatheringCopperAccessor.fabric_setPreviousByBlockSupplier(previousSupplier);
+			setStaticField(WeatheringCopper.class, "NEXT_BY_BLOCK", nextSupplier);
+			setStaticField(WeatheringCopper.class, "PREVIOUS_BY_BLOCK", previousSupplier);
 			oxidizablesAreMutable = true;
 		}
 	}
@@ -83,14 +86,35 @@ public final class OxidizableBlocksRegistryImpl {
 			BiMap<Block, Block> mutableMap = HashBiMap.create(HoneycombItemAccessor.fabric_getWaxablesSupplier().get());
 			Supplier<BiMap<Block, Block>> waxablesSupplier = () -> mutableMap;
 			Supplier<BiMap<Block, Block>> unwaxedSupplier = mutableMap::inverse;
-			HoneycombItemAccessor.fabric_setWaxablesSupplier(waxablesSupplier);
-			HoneycombItemAccessor.fabric_setWaxOffByBlockSupplier(unwaxedSupplier);
+			setStaticField(HoneycombItem.class, "WAXABLES", waxablesSupplier);
+			setStaticField(HoneycombItem.class, "WAX_OFF_BY_BLOCK", unwaxedSupplier);
 			waxablesAreMutable = true;
 		}
 	}
 
 	private static void refreshRandomTickCache(Block block) {
 		block.getStateDefinition().getPossibleStates().forEach(state -> ((RandomTickCacheRefresher) state).fabric_api$refreshRandomTickCache());
+	}
+
+	private static void setStaticField(Class<?> owner, String fieldName, Object value) {
+		try {
+			Field field = owner.getDeclaredField(fieldName);
+			Object base = UNSAFE.staticFieldBase(field);
+			long offset = UNSAFE.staticFieldOffset(field);
+			UNSAFE.putObjectVolatile(base, offset, value);
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("Failed to replace " + owner.getName() + "::" + fieldName, e);
+		}
+	}
+
+	private static Unsafe getUnsafe() {
+		try {
+			Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+			unsafeField.setAccessible(true);
+			return (Unsafe) unsafeField.get(null);
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("Unable to access sun.misc.Unsafe", e);
+		}
 	}
 
 	public interface RandomTickCacheRefresher {

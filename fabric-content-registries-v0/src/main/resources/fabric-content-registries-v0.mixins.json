@@ -11,9 +11,9 @@
     "GiveGiftsToHeroTaskMixin",
     "HoneycombItemAccessor",
     "LandPathNodeMakerMixin",
-    "WeatheringCopperAccessor",
     "PathContextMixin",
-    "VillagerEntityMixin"
+    "VillagerEntityMixin",
+    "WeatheringCopperAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -28,8 +28,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(WeatheringCopper.class)
 public interface OxidizableMixin {
-	@Dynamic("method_34740: Synthetic lambda body for Suppliers.memoize in initialization of OXIDATION_LEVEL_INCREASES")
-	@Inject(method = "method_34740", at = @At("RETURN"), cancellable = true)
+	@Dynamic("lambda$static$0: Synthetic lambda body for Suppliers.memoize in initialization of NEXT_BY_BLOCK")
+	@Inject(method = "lambda$static$0", at = @At("RETURN"), cancellable = true)
 	private static void createOxidationLevelIncreasesMap(CallbackInfoReturnable<BiMap> cir) {
 		cir.setReturnValue(HashBiMap.create(cir.getReturnValue()));
 	}
