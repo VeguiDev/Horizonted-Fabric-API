@@ -81,20 +81,15 @@ def moduleDependencies(project, List<String> depNames) {
 }
 
 def testDependencies(project, List<String> depNames) {
-    /*
-    def deps = depNames.iterator().collect { project.dependencies.project(path: ":$it", configuration: 'namedElements') }
-    def clientOutputs = depNames.iterator().collect { findProject(":$it").sourceSets.client.output }
+    def deps = depNames.collect { depName ->
+        project.dependencies.project(path: depName)
+    }
+
     project.dependencies {
         deps.each {
             testmodImplementation it
         }
-
-        clientOutputs.each {
-            testmodClientImplementation it
-        }
-    } */
-
-    //todo: testmod dependencies
+    }
 
 }
 
@@ -149,6 +144,47 @@ subprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
     }
+
+    if (file("src/testmod").exists()) {
+        sourceSets {
+            testmod {
+                java.srcDir("src/testmod/java")
+                resources.srcDir("src/testmod/resources")
+                compileClasspath += sourceSets.main.output + configurations.compileClasspath
+                runtimeClasspath += output + compileClasspath + configurations.runtimeClasspath
+            }
+        }
+
+        configurations.named("testmodImplementation") {
+            extendsFrom(configurations.getByName("implementation"))
+        }
+        configurations.named("testmodCompileOnly") {
+            extendsFrom(configurations.getByName("compileOnly"))
+        }
+        configurations.named("testmodRuntimeOnly") {
+            extendsFrom(configurations.getByName("runtimeOnly"))
+        }
+        configurations.named("testmodAnnotationProcessor") {
+            extendsFrom(configurations.getByName("annotationProcessor"))
+        }
+
+        dependencies {
+            testmodImplementation sourceSets.main.output
+        }
+
+        tasks.register("testmodJar", Jar) {
+            group = "build"
+            description = "Assembles the testmod jar for ${project.path}"
+            archiveClassifier.set("testmod")
+            from(sourceSets.testmod.output)
+        }
+
+        tasks.register("buildWithTestmod") {
+            group = "build"
+            description = "Builds ${project.path} including the testmod jar"
+            dependsOn(tasks.named("build"), tasks.named("testmodJar"))
+        }
+    }
     
     processResources {
         inputs.property('version', version)
@@ -196,4 +232,18 @@ processResources {
     filesMatching('horizon.plugin.json') {
         expand version: version
     }
+}
+
+tasks.register("testmodJars") {
+    group = "build"
+    description = "Assembles all available testmod jars."
+    dependsOn(subprojects.collect { subproject ->
+        subproject.file("src/testmod").exists() ? subproject.tasks.named("testmodJar") : null
+    }.findAll { it != null })
+}
+
+tasks.register("buildWithTestmods") {
+    group = "build"
+    description = "Builds the project and all available testmod jars."
+    dependsOn(tasks.named("build"), tasks.named("testmodJars"))
 }
