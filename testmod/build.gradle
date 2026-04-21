@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+    id("io.canvasmc.weaver.userdev") version "2.3.12"
+    id("io.canvasmc.horizon")
+    id("xyz.jpenilla.run-paper") version "3.0.2"
+}
+
+group = 'dev.vegui.hfa.testmod'
+version = '1.0.0-SNAPSHOT'
+
+repositories {
+
+}
+
+dependencies {
+    mixinPluginImplementation project(":");
+}
