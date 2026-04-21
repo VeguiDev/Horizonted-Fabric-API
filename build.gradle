@@ -1,18 +1,46 @@
 plugins {
     id "java-library"
     id "eclipse"
+    id "maven-publish"
     id("io.canvasmc.weaver.userdev") version "2.3.12"
     id("io.canvasmc.horizon") version "1.0.0"
     id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
-group = 'dev.vegui.masivo'
+group = providers.gradleProperty("publishedMavenGroup").orElse("dev.vegui.hfa").get()
 version = '1.0.0-SNAPSHOT'
 
 import groovy.json.JsonSlurper
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+
+def runtimeArtifactId = providers.gradleProperty("publishedRuntimeArtifactId").orElse("horizonted-fabric-api")
+def aggregatorArtifactId = providers.gradleProperty("publishedAggregatorArtifactId").orElse("fabric-api")
+def publishRepoUrl = providers.gradleProperty("publishRepoUrl")
+def publishRepoUsername = providers.gradleProperty("publishRepoUsername")
+def publishRepoPassword = providers.gradleProperty("publishRepoPassword")
+def useLocalHorizonCore = providers.gradleProperty("useLocalHorizonCore").map { it.toBoolean() }.orElse(false).get()
+def targetJavaVersion = 21
+def toolchainJavaVersion = useLocalHorizonCore ? 25 : targetJavaVersion
+
+def configurePublishingRepositories = { RepositoryHandler handler ->
+    handler.mavenLocal()
+
+    if (publishRepoUrl.present) {
+        handler.maven {
+            name = "publishTarget"
+            url = uri(publishRepoUrl.get())
+
+            if (publishRepoUsername.present && publishRepoPassword.present) {
+                credentials {
+                    username = publishRepoUsername.get()
+                    password = publishRepoPassword.get()
+                }
+            }
+        }
+    }
+}
 
 def getSubprojectVersion(Project project) {
     // Get the version from the gradle.properties file
@@ -106,14 +134,19 @@ repositories {
 }
 
 subprojects {
+    group = rootProject.group
+
     apply plugin: "java-library"
     apply plugin: "eclipse"
+    apply plugin: "maven-publish"
     apply plugin: "io.canvasmc.weaver.userdev"
     apply plugin: "io.canvasmc.horizon"
 
     java {
+        withSourcesJar()
+
         toolchain {
-            sourceCompatibility = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(toolchainJavaVersion)
         }
     }
 
@@ -143,6 +176,14 @@ subprojects {
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+
+        if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+            options.release.set(targetJavaVersion)
+        }
     }
 
     if (file("src/testmod").exists()) {
@@ -193,6 +234,24 @@ subprojects {
             expand version: version
         }
     }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+                artifactId = project.name
+
+                pom {
+                    name = project.name
+                    description = "${project.name} module for Horizonted Fabric API"
+                }
+            }
+        }
+
+        repositories {
+            configurePublishingRepositories(delegate)
+        }
+    }
 }
 
 dependencies {
@@ -208,14 +267,12 @@ dependencies {
     includeMixinPlugin project(":fabric-networking-api-v1")
 }
 
-def targetJavaVersion = 21
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
+    withSourcesJar()
+    toolchain.languageVersion = JavaLanguageVersion.of(toolchainJavaVersion)
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -246,4 +303,44 @@ tasks.register("buildWithTestmods") {
     group = "build"
     description = "Builds the project and all available testmod jars."
     dependsOn(tasks.named("build"), tasks.named("testmodJars"))
+}
+
+publishing {
+    publications {
+        horizonPlugin(MavenPublication) {
+            from components.java
+            artifactId = runtimeArtifactId.get()
+
+            pom {
+                name = "Horizonted Fabric API"
+                description = "Runtime Horizon plugin bundle for the Horizonted Fabric API modules"
+            }
+        }
+
+        fabricApi(MavenPublication) {
+            artifactId = aggregatorArtifactId.get()
+
+            pom {
+                name = "Horizonted Fabric API"
+                description = "Aggregator POM for all published Horizonted Fabric API modules"
+                packaging = "pom"
+
+                withXml {
+                    def depsNode = asNode().appendNode("dependencies")
+
+                    subprojects.each { subproject ->
+                        def dependencyNode = depsNode.appendNode("dependency")
+                        dependencyNode.appendNode("groupId", subproject.group)
+                        dependencyNode.appendNode("artifactId", subproject.name)
+                        dependencyNode.appendNode("version", subproject.version)
+                        dependencyNode.appendNode("scope", "compile")
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        configurePublishingRepositories(delegate)
+    }
 }

@@ -1,0 +1,27 @@
+{
+  "name": "HFA Test Mod",
+  "version": "1.0.0-SNAPSHOT",
+  "description": "HFA Test Mod",
+  "entrypoints": [
+    {
+      "server_postboostrap": "net.veguit.hfa.testmod.TestMod"
+    }
+  ],
+  "transformers": [],
+  "authors": [
+    "VeguiDev",
+    "FabricMC"
+  ],
+  "load_datapack_entry": false,
+  "mixins": [
+
+  ],
+  "wideners": [
+
+  ],
+  "dependencies": {
+    "minecraft": ">=1.21.8",
+    "horizon": ">=1.0.0",
+    "fabricapi": ">=1.0.0"
+  }
+}
