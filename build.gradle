@@ -12,9 +12,12 @@ def baseVersion = "1.0.0-SNAPSHOT"
 group = providers.gradleProperty("publishedMavenGroup").orElse("dev.vegui.hfa").get()
 
 def runNumber = providers.environmentVariable("GITHUB_RUN_NUMBER")
-def commitHash = getCommitHash()
+def commitHash = providers.environmentVariable("GITHUB_SHA")
+        .map { it.substring(0, 7) }
+        .orElse("local")
+        .get()
 
-version = runNumber.present
+version = runNumber.present && commitHash != "local"
         ? "${baseVersion}+${runNumber.get()}.${commitHash}"
         : "${baseVersion}+local"
 
@@ -65,10 +68,13 @@ def getSubprojectVersion(Project project) {
     }
 
     def commitHash = project.providers.environmentVariable("GITHUB_SHA")
+            .map { it.substring(0, 7) }
+            .orElse("local")
+            .get()
 
     return baseVersion + "+" +
             runNumber.get() + "." +
-            commitHash.get().substring(0, 7)
+            commitHash
 }
 
 def moduleDependencies(project, List<String> depNames) {
