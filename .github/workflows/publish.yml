@@ -1,13 +1,20 @@
-name: Publish Maven
+name: Publish Maven to R2
 
 on:
   push:
     branches:
-      - main
+      - master
+      - dev
+    tags:
+      - "*"
+  workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+
+    env:
+      CI: true
 
     steps:
       - uses: actions/checkout@v4
@@ -17,16 +24,26 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Build & publish locally
-        run: ./gradlew publishToMavenLocal
+      - name: Publish staging repo
+        run: ./gradlew publish
+
+      - name: Decide target repo path
+        id: repo
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "path=releases" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/heads/master ]]; then
+            echo "path=releases" >> $GITHUB_OUTPUT
+          else
+            echo "path=snapshots" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload to R2
         run: |
-          aws s3 sync ~/.m2/repository \
-            s3://vegui-maven/snapshots \
+          aws s3 sync build/staging-repo \
+            s3://vegui-maven/${{ steps.repo.outputs.path }} \
             --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com \
-            --exclude "*" \
-            --include "dev/vegui/**"
+            --delete
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_KEY }}

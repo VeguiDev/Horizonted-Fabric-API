@@ -7,8 +7,16 @@ plugins {
     id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
+def baseVersion = "1.0.0-SNAPSHOT"
+
 group = providers.gradleProperty("publishedMavenGroup").orElse("dev.vegui.hfa").get()
-version = '1.0.0-SNAPSHOT'
+
+def runNumber = providers.environmentVariable("GITHUB_RUN_NUMBER")
+def commitHash = getCommitHash()
+
+version = runNumber.present
+        ? "${baseVersion}+${runNumber.get()}.${commitHash}"
+        : "${baseVersion}+local"
 
 import groovy.json.JsonSlurper
 import java.net.http.HttpClient
@@ -43,21 +51,24 @@ def configurePublishingRepositories = { RepositoryHandler handler ->
 }
 
 def getSubprojectVersion(Project project) {
-    // Get the version from the gradle.properties file
-    def version = project.properties["${project.name}-version"]
 
-    if (!version) {
+    def baseVersion = project.properties["${project.name}-version"]
+
+    if (!baseVersion) {
         throw new NullPointerException("Could not find version for " + project.name)
     }
 
-    if (!project.providers.environmentVariable("CI").present) {
-        return version + "+local"
+    def runNumber = project.providers.environmentVariable("GITHUB_RUN_NUMBER")
+
+    if (!runNumber.present) {
+        return baseVersion + "+local"
     }
 
-    def hashProvider = project.providers.of(CommitHashValueSource.class) {
-        parameters.directory = project.name
-    }
-    return version + "+" + hashProvider.get().substring(0, 8) + DigestUtils.sha256Hex(project.rootProject.minecraft_version).substring(0, 2)
+    def commitHash = project.providers.environmentVariable("GITHUB_SHA")
+
+    return baseVersion + "+" +
+            runNumber.get() + "." +
+            commitHash.get().substring(0, 7)
 }
 
 def moduleDependencies(project, List<String> depNames) {
@@ -342,5 +353,9 @@ publishing {
 
     repositories {
         configurePublishingRepositories(delegate)
+        maven {
+            name = "staging"
+            url = layout.buildDirectory.dir("staging-repo")
+        }
     }
 }
