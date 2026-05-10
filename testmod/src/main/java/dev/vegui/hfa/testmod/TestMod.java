@@ -1,8 +1,8 @@
 package dev.vegui.hfa.testmod;
 
-import io.canvasmc.horizon.service.entrypoint.DedicatedServerInitializer;
+import io.canvasmc.horizon.service.entrypoint.ServerPostBootstrapEntrypoint;
 
-public class TestMod implements DedicatedServerInitializer {
+public class TestMod implements ServerPostBootstrapEntrypoint {
 
     @Override
     public void onInitialize() {

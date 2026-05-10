@@ -13,5 +13,7 @@ repositories {
 }
 
 dependencies {
-    runtimePlugin project(":");
+    runtimePlugin(project(":")) {
+        transitive = false
+    }
 }
