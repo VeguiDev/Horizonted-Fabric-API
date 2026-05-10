@@ -19,6 +19,10 @@
   "wideners": [
   ],
   "dependencies": {
-    "minecraft": ">=1.21.8"
+    "minecraft": ">=1.21.8",
+    "horizon": ">=${horizon_version}",
+    "fabric-api-base": "*",
+    "fabric-networking-api-v1": "*"
+
   }
 }

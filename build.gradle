@@ -3,7 +3,7 @@ plugins {
     id "eclipse"
     id "maven-publish"
     id("io.canvasmc.weaver.userdev") version "2.3.12"
-    id("io.canvasmc.horizon") version "1.0.0"
+    id("io.canvasmc.horizon") version "1.0.2"
     id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
@@ -31,9 +31,8 @@ def aggregatorArtifactId = providers.gradleProperty("publishedAggregatorArtifact
 def publishRepoUrl = providers.gradleProperty("publishRepoUrl")
 def publishRepoUsername = providers.gradleProperty("publishRepoUsername")
 def publishRepoPassword = providers.gradleProperty("publishRepoPassword")
-def useLocalHorizonCore = providers.gradleProperty("useLocalHorizonCore").map { it.toBoolean() }.orElse(false).get()
-def targetJavaVersion = 21
-def toolchainJavaVersion = useLocalHorizonCore ? 25 : targetJavaVersion
+def targetJavaVersion = 25
+def toolchainJavaVersion = targetJavaVersion
 
 def configurePublishingRepositories = { RepositoryHandler handler ->
     handler.mavenLocal()
@@ -182,7 +181,7 @@ subprojects {
     dependencies {
         paperweight.paperDevBundle("1.21.8-R0.1-SNAPSHOT")
 
-        horizon.horizonApi("1.0.0.49");
+        horizon.horizonApi(project["horizon-version"])
 
         testImplementation platform("org.junit:junit-bom:5.12.2")
         testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -246,9 +245,13 @@ subprojects {
     
     processResources {
         inputs.property('version', version)
+        inputs.property('horizon_version', project.properties["horizon-version"])
         filteringCharset 'UTF-8'
         filesMatching('horizon.plugin.json') {
-            expand version: version
+            expand (
+                    version: version,
+                    horizon_version: project.properties["horizon-version"]
+            )
         }
     }
 
@@ -273,7 +276,7 @@ subprojects {
 
 dependencies {
     paperweight.paperDevBundle("1.21.8-R0.1-SNAPSHOT")
-    horizon.horizonApi("1.0.0.49")
+    horizon.horizonApi(project["horizon-version"])
 
     includeMixinPlugin project(":fabric-api-base")
     includeMixinPlugin project(":fabric-command-api-v2")

@@ -13,5 +13,5 @@ repositories {
 }
 
 dependencies {
-    mixinPluginImplementation project(":");
+    runtimePlugin project(":");
 }

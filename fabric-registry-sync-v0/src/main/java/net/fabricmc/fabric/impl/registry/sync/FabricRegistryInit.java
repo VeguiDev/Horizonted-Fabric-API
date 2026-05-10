@@ -18,7 +18,7 @@ package net.fabricmc.fabric.impl.registry.sync;
 
 import java.util.Set;
 
-import io.canvasmc.horizon.service.entrypoint.DedicatedServerInitializer;
+import io.canvasmc.horizon.service.entrypoint.ServerPostBootstrapEntrypoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerConfigurationConnectionEvents
 import net.fabricmc.fabric.api.networking.v1.ServerConfigurationNetworking;
 import net.fabricmc.fabric.impl.registry.sync.packet.DirectRegistryPacketHandler;
 
-public class FabricRegistryInit implements DedicatedServerInitializer {
+public class FabricRegistryInit implements ServerPostBootstrapEntrypoint {
 	private static final Logger LOGGER = LoggerFactory.getLogger("FabricRegistrySync");
 	private static final Set<String> VANILLA_NAMESPACES = Set.of(ResourceLocation.DEFAULT_NAMESPACE, "brigadier");
 

@@ -16,7 +16,7 @@
 
 package net.fabricmc.fabric.impl.event.lifecycle;
 
-import io.canvasmc.horizon.service.entrypoint.DedicatedServerInitializer;
+import io.canvasmc.horizon.service.entrypoint.ServerPostBootstrapEntrypoint;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -25,7 +25,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 
-public final class LifecycleEventsImpl implements DedicatedServerInitializer {
+public final class LifecycleEventsImpl implements ServerPostBootstrapEntrypoint {
 	@Override
 	public void onInitialize() {
 		// Part of impl for block entity events
