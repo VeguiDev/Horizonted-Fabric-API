@@ -1,0 +1,7 @@
+{
+  "mixins": [
+    "BootstrapMixin"
+  ],
+  "package": "dev.vegui.hfa.mixin",
+  "compatibilityLevel": "JAVA_21"
+}
