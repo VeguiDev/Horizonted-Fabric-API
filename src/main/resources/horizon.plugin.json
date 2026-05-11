@@ -1,8 +1,8 @@
 {
-  "id": "fabric-api",
+  "id": "horizonted-fabric-api",
   "provides": [
     "fabricapi",
-    "horizonted-fabric-api"
+    "fabric-api"
   ],
   "name": "Horizonted Fabric API",
   "version": "${version}",
@@ -15,9 +15,12 @@
   ],
   "load_datapack_entry": false,
   "bundle": true,
-  "mixins": [],
+  "mixins": [
+    "hfa-root.mixins.json"
+  ],
   "wideners": [],
   "dependencies": {
-    "minecraft": ">=1.21.8"
+    "minecraft": ">=1.21.8",
+    "horizon": ">=1.0.0+72"
   }
 }

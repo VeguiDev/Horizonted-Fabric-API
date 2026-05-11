@@ -1,10 +1,17 @@
 {
+  "id": "hfa_test_mod",
+  "provides": [
+    "hfa-test-mod"
+  ],
   "name": "HFA Test Mod",
   "version": "1.0.0-SNAPSHOT",
   "description": "HFA Test Mod",
   "entrypoints": [
     {
       "server_postbootstrap": "dev.vegui.hfa.testmod.TestMod"
+    },
+    {
+      "main": "dev.vegui.hfa.testmod.TestModInit"
     }
   ],
   "transformers": [],

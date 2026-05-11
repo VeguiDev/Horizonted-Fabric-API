@@ -31,3 +31,29 @@ dependencies {
         transitive = false
     }
 }
+
+tasks.named("runServer") {
+    doFirst {
+        def serverProperties = file("run/server.properties")
+
+        if (serverProperties.exists()) {
+            def text = serverProperties.getText("UTF-8")
+
+            if (text.contains("debug=false")) {
+                serverProperties.setText(text.replace("debug=false", "debug=true"), "UTF-8")
+            } else if (!text.contains("debug=true")) {
+                serverProperties.append("${System.lineSeparator()}debug=true${System.lineSeparator()}", "UTF-8")
+            }
+        }
+
+        def spigotYml = file("run/spigot.yml")
+
+        if (spigotYml.exists()) {
+            def text = spigotYml.getText("UTF-8")
+
+            if (text.contains("  debug: false")) {
+                spigotYml.setText(text.replace("  debug: false", "  debug: true"), "UTF-8")
+            }
+        }
+    }
+}
