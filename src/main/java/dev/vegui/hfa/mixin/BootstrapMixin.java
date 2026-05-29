@@ -1,7 +1,8 @@
 package dev.vegui.hfa.mixin;
 
-import io.canvasmc.horizon.service.entrypoint.EntrypointContainer;
-import net.fabricmc.api.ModInitializer;
+import dev.vegui.hfa.entrypoint.HFAMainEntrypointInvoker;
+import dev.vegui.hfa.metadata.HFAPluginMetadataRegistry;
+import dev.vegui.hfa.registry.RegistryFork;
 import net.minecraft.server.Bootstrap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,6 +20,13 @@ public class BootstrapMixin {
         )
     )
     private static void hfa$runMainEntrypoints(CallbackInfo ci) {
-        EntrypointContainer.buildProvider("main", ModInitializer.class, Void.class).invoke();
+        HFAPluginMetadataRegistry.loadAll();
+        RegistryFork.captureBaseline();
+
+        try {
+            HFAMainEntrypointInvoker.invoke();
+        } finally {
+            RegistryFork.completeFork();
+        }
     }
 }

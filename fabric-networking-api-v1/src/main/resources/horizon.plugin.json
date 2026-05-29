@@ -4,7 +4,7 @@
   "description": "Fabric Networking API port for Horizon",
   "entrypoints": [
     {
-      "server_postbootstrap": "dev.vegui.fabricapi.FabricNetworkingApi"
+      "server_postbootstrap": "dev.vegui.hfa.networking.FabricNetworkingApi"
     }
   ],
   "transformers": [],

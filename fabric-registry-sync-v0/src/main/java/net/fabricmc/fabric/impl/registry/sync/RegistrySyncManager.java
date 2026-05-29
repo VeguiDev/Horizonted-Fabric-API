@@ -46,6 +46,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ConfigurationTask;
 import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
+import net.minecraft.core.registries.Registries;
 
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
 import net.fabricmc.fabric.api.event.registry.RegistryAttributeHolder;
@@ -53,6 +54,8 @@ import net.fabricmc.fabric.api.networking.v1.FabricServerConfigurationNetworkHan
 import net.fabricmc.fabric.api.networking.v1.ServerConfigurationNetworking;
 import net.fabricmc.fabric.impl.networking.server.ServerNetworkingImpl;
 import net.fabricmc.fabric.impl.registry.sync.packet.DirectRegistryPacketHandler;
+import dev.vegui.hfa.impl.client.projection.v0.ClientProjectionRegistryImpl;
+import dev.vegui.hfa.metadata.HFAClientCompatibility;
 
 public final class RegistrySyncManager {
 	public static final boolean DEBUG = Boolean.getBoolean("fabric.registry.debug");
@@ -68,18 +71,26 @@ public final class RegistrySyncManager {
 	}
 
 	public static void configureClient(ServerConfigurationPacketListenerImpl handler, MinecraftServer server) {
-		Map<ResourceLocation, Object2IntMap<ResourceLocation>> map = createAndPopulateRegistryMap();
+		boolean canReceiveRegistrySync = ServerConfigurationNetworking.canSend(handler, DIRECT_PACKET_HANDLER.getPacketId());
+
+		if (!canReceiveRegistrySync && HFAClientCompatibility.requiresClient()) {
+			handler.disconnect(getRequiredHfaClientText(ServerNetworkingImpl.getAddon(handler).getClientBrand()));
+			return;
+		}
+
+		List<ResourceLocation> missingItemProjections = canReceiveRegistrySync ? List.of() : ClientProjectionRegistryImpl.getItemsMissingProjection();
+		Map<ResourceLocation, Object2IntMap<ResourceLocation>> map = createAndPopulateRegistryMap(canReceiveRegistrySync, missingItemProjections.isEmpty());
 
 		if (map == null) {
 			return;
 		}
 
-		if (!ServerConfigurationNetworking.canSend(handler, DIRECT_PACKET_HANDLER.getPacketId())) {
+		if (!canReceiveRegistrySync) {
 			if (areAllRegistriesOptional(map)) {
 				return;
 			}
 
-			Component message = getIncompatibleClientText(ServerNetworkingImpl.getAddon(handler).getClientBrand(), map);
+			Component message = getIncompatibleClientText(ServerNetworkingImpl.getAddon(handler).getClientBrand(), map, missingItemProjections);
 			handler.disconnect(message);
 			return;
 		}
@@ -87,7 +98,36 @@ public final class RegistrySyncManager {
 		((FabricServerConfigurationNetworkHandler) handler).addTask(new SyncConfigurationTask(map));
 	}
 
-	private static Component getIncompatibleClientText(@Nullable String brand, Map<ResourceLocation, Object2IntMap<ResourceLocation>> map) {
+	private static Component getRequiredHfaClientText(@Nullable String brand) {
+		String brandText = switch (brand) {
+			case "fabric" -> "Fabric API";
+			case null, default -> "Fabric Loader and Fabric API";
+		};
+
+		MutableComponent reasons = Component.literal("HFA client requirement reasons:\n\n");
+		List<String> requiredReasons = HFAClientCompatibility.reasons();
+		int toDisplay = 4;
+
+		for (int i = 0; i < Math.min(requiredReasons.size(), toDisplay); i++) {
+			reasons.append(Component.literal(requiredReasons.get(i)).withStyle(ChatFormatting.YELLOW));
+			reasons.append(CommonComponents.NEW_LINE);
+		}
+
+		if (requiredReasons.size() > toDisplay) {
+			reasons.append(Component.literal("And %d more...".formatted(requiredReasons.size() - toDisplay)));
+		}
+
+		return Component.literal("This server requires ")
+				.append(Component.literal(brandText).withStyle(ChatFormatting.GREEN))
+				.append(" installed on your client!")
+				.append(CommonComponents.NEW_LINE)
+				.append(reasons)
+				.append(CommonComponents.NEW_LINE)
+				.append(CommonComponents.NEW_LINE)
+				.append(Component.literal("Contact the server's administrator for more information!").withStyle(ChatFormatting.GOLD));
+	}
+
+	private static Component getIncompatibleClientText(@Nullable String brand, Map<ResourceLocation, Object2IntMap<ResourceLocation>> map, List<ResourceLocation> missingItemProjections) {
 		String brandText = switch (brand) {
 			case "fabric" -> "Fabric API";
 			case null, default -> "Fabric Loader and Fabric API";
@@ -112,6 +152,22 @@ public final class RegistrySyncManager {
 
 		if (namespaces.size() > toDisplay) {
 			text.append(Component.literal("And %d more...".formatted(namespaces.size() - toDisplay)));
+		}
+
+		if (!missingItemProjections.isEmpty()) {
+			text.append(CommonComponents.NEW_LINE);
+			text.append(CommonComponents.NEW_LINE);
+			text.append(Component.literal("Missing item projections:").withStyle(ChatFormatting.RED));
+			text.append(CommonComponents.NEW_LINE);
+
+			for (int i = 0; i < Math.min(missingItemProjections.size(), toDisplay); i++) {
+				text.append(Component.literal(missingItemProjections.get(i).toString()).withStyle(ChatFormatting.YELLOW));
+				text.append(CommonComponents.NEW_LINE);
+			}
+
+			if (missingItemProjections.size() > toDisplay) {
+				text.append(Component.literal("And %d more...".formatted(missingItemProjections.size() - toDisplay)));
+			}
 		}
 
 		return Component.literal("This server requires ")
@@ -147,7 +203,7 @@ public final class RegistrySyncManager {
 	}
 
 	@Nullable
-	public static Map<ResourceLocation, Object2IntMap<ResourceLocation>> createAndPopulateRegistryMap() {
+	public static Map<ResourceLocation, Object2IntMap<ResourceLocation>> createAndPopulateRegistryMap(boolean canReceiveRegistrySync, boolean canProjectCustomItems) {
 		Map<ResourceLocation, Object2IntMap<ResourceLocation>> map = new LinkedHashMap<>();
 
 		for (Registry<?> registry : BuiltInRegistries.REGISTRY) {
@@ -170,6 +226,11 @@ public final class RegistrySyncManager {
 
 			if (!attributeHolder.hasAttribute(RegistryAttribute.MODDED)) {
 				LOGGER.debug("Skipping un-modded registry: {}", registryId);
+				continue;
+			}
+
+			if (!canReceiveRegistrySync && canProjectCustomItems && registry.key().equals(Registries.ITEM)) {
+				LOGGER.debug("Skipping item registry sync for client without registry sync support");
 				continue;
 			}
 

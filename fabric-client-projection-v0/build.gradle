@@ -2,6 +2,5 @@ version = getSubprojectVersion(project)
 
 moduleDependencies(project, [
 	'fabric-api-base',
-	'fabric-networking-api-v1',
-	'fabric-registry-sync-v0'
+	'fabric-networking-api-v1'
 ])

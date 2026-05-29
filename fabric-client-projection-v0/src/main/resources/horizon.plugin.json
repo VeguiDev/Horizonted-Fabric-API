@@ -4,7 +4,8 @@
   "description": "Experimental item projection support for Horizonted Fabric API",
   "entrypoints": [
     {
-      "server_postbootstrap": "dev.vegui.fabricapi.projection.FabricClientProjectionApi"
+      "server_postbootstrap": "dev.vegui.hfa.projection.FabricClientProjectionApi",
+      "order": -1000
     }
   ],
   "transformers": [],
@@ -12,13 +13,14 @@
     "VeguiDev"
   ],
   "load_datapack_entry": false,
-  "mixins": [],
+  "mixins": [
+    "fabric-client-projection-v0.mixins.json"
+  ],
   "wideners": [],
   "dependencies": {
     "minecraft": ">=1.21.8",
     "horizon": ">=${horizon_version}",
     "fabric-api-base": "*",
-    "fabric-networking-api-v1": "*",
-    "fabric-registry-sync-v0": "*"
+    "fabric-networking-api-v1": "*"
   }
 }

@@ -22,6 +22,7 @@
     "minecraft": ">=1.21.8",
     "horizon": ">=${horizon_version}",
     "fabric-api-base": "*",
+    "fabric-client-projection-v0": "*",
     "fabric-networking-api-v1": "*"
 
   }

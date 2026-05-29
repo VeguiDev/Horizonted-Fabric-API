@@ -8,5 +8,6 @@ public class TestModInit implements ModInitializer {
     public void onInitialize() {
         TestMod.LOGGER.info("Mod initializer invoked");
         ModItems.initialize();
+
     }
 }

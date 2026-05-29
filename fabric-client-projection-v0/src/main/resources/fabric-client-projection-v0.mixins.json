@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "dev.vegui.hfa.mixin.projection",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ItemStackOptionalStreamCodecMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

@@ -1,5 +1,7 @@
 package dev.vegui.hfa.testmod.setup;
 
+import dev.vegui.hfa.api.client.projection.v0.ClientProjectionRegistry;
+import dev.vegui.hfa.api.client.projection.v0.ItemProjectionConfig;
 import dev.vegui.hfa.testmod.TestMod;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -7,6 +9,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 
 import java.util.function.Function;
 
@@ -33,5 +36,10 @@ public class ModItems {
     }
 
     public static void initialize() {
+
+//        ClientProjectionRegistry.registerItemProjection(
+//                ModItems.TEST_ITEM,
+//                new ItemProjectionConfig(Items.PAPER, "hfa_test_mod:test_item")
+//        );
     }
 }
